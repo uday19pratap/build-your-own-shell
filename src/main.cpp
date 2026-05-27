@@ -50,6 +50,7 @@ int main() {
               // -1 means no file/no exec permission
               if(access(exec_path.c_str(), X_OK) == 0) {
                 std::cout << arg << " is " << exec_path << std::endl;
+                break;
               }
             }
           }
