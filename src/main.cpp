@@ -36,8 +36,10 @@ int main() {
       std::string arg;
       while(ss >> arg) {
         //built in command
+        bool bFoundArg = false;
         if(built_in_commands.find(arg) != built_in_commands.end()) {
           std::cout << arg << " is a shell builtin" << std::endl;
+          bFoundArg = true;
         }else {
           //not a built in command, search for binary in PATH
           char* path_env = std::getenv("PATH");
@@ -50,11 +52,14 @@ int main() {
               // -1 means no file/no exec permission
               if(access(exec_path.c_str(), X_OK) == 0) {
                 std::cout << arg << " is " << exec_path << std::endl;
+                bFoundArg = true;
                 break;
               }
             }
           }
-          //neither a built in command nor a executable in PATH. Print not found.
+        }
+        //neither a built in command nor a executable in PATH. Print not found.
+        if(!bFoundArg) {
           std::cout << arg << ": not found" << std::endl;
         }
       }
