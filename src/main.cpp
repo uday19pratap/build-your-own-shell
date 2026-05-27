@@ -9,20 +9,21 @@ int main() {
   // TODO: Uncomment the code below to pass the first stage
   while(true) {
     std::cout << "$ ";
-    std::string input;
-    std::getline(std::cin, input);
-    if(input == "exit") {
+    std::string user_input;
+    std::getline(std::cin, user_input);
+    if(user_input == "exit") {
       return 0;
-    }else if(input.substr(0,5) == "echo ") {
-      for(int i = 5; i <= input.length(); i++) {
-        if(input[i] == ' ') {
+    }else if(user_input.substr(0,5) == "echo ") {
+      for(int i = 5; i <= user_input.length(); i++) {
+        if(user_input[i] == ' ') {
           continue;
         }
-        std::cout << input.substr(i) << std::endl;
+        std::string arg = user_input.substr(i);
+        std::cout << arg << std::endl;
         break;
       }
     }else {
-      std::cout << input << ": command not found" << std::endl;
+      std::cout << user_input << ": command not found" << std::endl;
     }
   }
   return 1;
