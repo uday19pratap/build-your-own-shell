@@ -19,6 +19,7 @@ int main() {
           continue;
         }
         std::cout << input.substr(i) << std::endl;
+        break;
       }
     }else {
       std::cout << input << ": command not found" << std::endl;
