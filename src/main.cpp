@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <boost/alogrith/string.hpp>
 
 int main() {
   // Flush after every std::cout / std:cerr
@@ -13,8 +14,12 @@ int main() {
     std::getline(std::cin, input);
     if(input == "exit") {
       return 0;
+    }else if(input.subtr(0,5) == "echo ") {
+      std::string rest = input.substring(5);
+      std::cout << boost::trim(rest) << std::endl;
+    }else {
+      std::cout << input << ": command not found" << std::endl;
     }
-    std::cout << input << ": command not found" << std::endl;
   }
   return 1;
 }
