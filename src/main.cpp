@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include <boost/algorithm/string.hpp>
+#include <boost>
 
 int main() {
   // Flush after every std::cout / std:cerr
