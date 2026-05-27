@@ -15,7 +15,7 @@ int main() {
       return 0;
     }else if(input.substr(0,5) == "echo ") {
       for(int i = 5; i <= input.length(); i++) {
-        if(input[i] == " ") {
+        if(input[i] == ' ') {
           continue;
         }
         std::cout << input.substr(i) << std::endl;
