@@ -14,8 +14,12 @@ int main() {
     if(input == "exit") {
       return 0;
     }else if(input.substr(0,5) == "echo ") {
-      std::string rest = input.substr(5);
-      std::cout << input.substr(5) << std::endl;
+      for(int i = 5; i <= input.length(); i++) {
+        if(input[i] == " ") {
+          continue;
+        }
+        std::cout << input.substr(i) << std::endl;
+      }
     }else {
       std::cout << input << ": command not found" << std::endl;
     }
