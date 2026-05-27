@@ -17,14 +17,13 @@ int main() {
     if(user_input == "exit") {
       return 0;
     }else if(user_input.substr(0,5) == "echo ") {
-      for(int i = 5; i <= user_input.length(); i++) {
-        if(user_input[i] == ' ') {
-          continue;
-        }
-        std::string args = user_input.substr(i);
-        std::cout << args<< std::endl;
-        break;
+      std::string args = user_input.substr(5);
+      std::stringstream ss(args);
+      std::string arg;
+      while(ss >> arg) {
+        std::cout << arg << " ";
       }
+      std::cout << std::endl;
     }else if(user_input.substr(0,5) == "type ") {
       std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit"};
       std::string args = user_input.substr(5);
