@@ -32,12 +32,11 @@ int main() {
       std::string arg;
       while(ss >> arg) {
         if(built_in_commands.find(arg) != built_in_commands.end()) {
-          std::cout << arg << " is a shell built-in" << std::endl;
+          std::cout << arg << " is a shell builtin" << std::endl;
         }else {
           std::cout << arg << ": not found" << std::endl;
         }
       }
-
     }
     else {
       std::cout << user_input << ": command not found" << std::endl;
