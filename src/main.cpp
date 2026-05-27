@@ -1,5 +1,8 @@
 #include <iostream>
 #include <string>
+#include <sstream>
+#include <unordered_set>
+
 
 int main() {
   // Flush after every std::cout / std:cerr
@@ -18,11 +21,25 @@ int main() {
         if(user_input[i] == ' ') {
           continue;
         }
-        std::string arg = user_input.substr(i);
-        std::cout << arg << std::endl;
+        std::string args = user_input.substr(i);
+        std::cout << args<< std::endl;
         break;
       }
-    }else {
+    }else if(user_input.substr(0,5) == "type ") {
+      std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit"};
+      std::string args = user_input.substr(5);
+      std::stringstream ss(args);
+      std::string arg;
+      while(ss >> arg) {
+        if(built_in_commands.find(arg) != built_in_commands.end()) {
+          std::cout << arg << " is a shell built-in" << std::endl;
+        }else {
+          std::cout << arg << ": not found" << std::endl;
+        }
+      }
+
+    }
+    else {
       std::cout << user_input << ": command not found" << std::endl;
     }
   }
