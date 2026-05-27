@@ -3,12 +3,14 @@
 #include <sstream>
 #include <unordered_set>
 #include <unistd.h>
+#include <vector>
 
 #ifdef _WIN32
 constexpr char PATH_LIST_SEPARATOR = ';';
 #else
 constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
+const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit"};
 
 int main() {
   // Flush after every std::cout / std:cerr
@@ -30,7 +32,6 @@ int main() {
       }
       std::cout << std::endl;
     }else if(user_input.substr(0,5) == "type ") {
-      std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit"};
       std::string args = user_input.substr(5);
       std::stringstream ss(args);
       std::string arg;
@@ -63,9 +64,31 @@ int main() {
           std::cout << arg << ": not found" << std::endl;
         }
       }
-    }
-    else {
+    } else {
+      //check if command is an executable in PATH.
+      bool bExecuted = false;
+      char* path_env = std::getenv("PATH");
+      if(path_env != nullptr) {
+        std::stringstream user_input_ss(user_input);
+        std::stringstream path_ss(path_env);
+        std::string cmd;
+        user_input_ss >> cmd;
+        std::stringstream ss(path_env);
+        std::string path;
+        while(std::getline(path_ss, path, PATH_LIST_SEPARATOR)) {
+          std::string exec_path = path + "/" + cmd;
+          // 0 means file exists and has exec permission
+          // -1 means no file/no exec permission
+          if(access(exec_path.c_str(), X_OK) == 0) {
+            std::system(user_input.c_str());
+            bExecuted = true;
+            break;
+          }
+        }
+      }
+      if(!bExecuted) {
       std::cout << user_input << ": command not found" << std::endl;
+      }
     }
   }
   return 1;
