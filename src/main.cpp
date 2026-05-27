@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <boost>
 
 int main() {
   // Flush after every std::cout / std:cerr
@@ -16,7 +15,7 @@ int main() {
       return 0;
     }else if(input.subtr(0,5) == "echo ") {
       std::string rest = input.substring(5);
-      std::cout << boost::trim(rest) << std::endl;
+      std::cout << input.substring(5) << std::endl;
     }else {
       std::cout << input << ": command not found" << std::endl;
     }
