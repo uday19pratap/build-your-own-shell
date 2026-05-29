@@ -63,8 +63,6 @@ ParsedCommand parse_command(const std::string& user_input) {
   std::getline(iss, args);
   //handle single quotes
   parsed.args = pre_process_args(args);
-  std::string arg;
-
   return parsed;
 }
 
