@@ -19,11 +19,48 @@ struct ParsedCommand {
   std::vector<std::string> args;
 };
 
+std::vector<std::string> pre_process_args(const std::string& args) {
+  std::vector<std::string> processed_args;
+  std::string cur;
+  bool is_inside_single_quote = false;
+
+  for(char ch : args) {
+    // whether we are within quotes or not, we will toggle is_inside_single_quote
+    //if we come accross a ' and then continue. the ' will not be part of our buffer string
+    if(ch == '\'') {
+      is_inside_single_quote = !is_inside_single_quote;
+      continue;
+    }
+    // if and only if we come accross a '
+    if(!is_inside_single_quote) {
+      //if we are outside quotes, then only ' ' can break the word
+      //breaking means we store our buffer string cur uptill now in args
+      if(ch == ' ') {
+        if(!cur.empty()) {
+          processed_args.push_back(cur);
+          cur = "";
+        }
+        continue;
+      }
+    }
+    cur += ch;
+  }
+  
+  if(!cur.empty()) {
+    processed_args.push_back(cur);
+  }
+  return processed_args;
+}
+
 ParsedCommand parse_command(const std::string& user_input) {
+
   std::istringstream iss(user_input);
   ParsedCommand parsed;
   iss >> parsed.command;
-
+  std::string args;
+  std::getline(iss, args);
+  //handle single quotes
+  parsed.args = pre_process_args(args);
   std::string arg;
   while(iss >> arg) {
     parsed.args.push_back(arg);
