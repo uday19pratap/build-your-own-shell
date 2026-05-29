@@ -1,7 +1,9 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
+#include <functional>
 #include <unistd.h>
 #include <vector>
 
@@ -12,6 +14,102 @@ constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
 const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit"};
 
+struct ParsedCommand {
+  std::string command;
+  std::vector<std::string> args;
+};
+
+ParsedCommand parse_command(const std::string& user_input) {
+  std::istringstream iss(user_input);
+  ParsedCommand parsed;
+  iss >> parsed.command;
+
+  std::string arg;
+  while(iss >> arg) {
+    parsed.args.push_back(arg);
+  }
+
+  return parsed;
+}
+
+using CommandHandler = std::function<void(const ParsedCommand&)>;
+
+std::string find_executable_path(const std::string& command) {
+  char* path_env = std::getenv("PATH");
+  if(path_env == nullptr) {
+    return "";
+  }
+
+  std::stringstream path_ss(path_env);
+  std::string path;
+  while(std::getline(path_ss, path, PATH_LIST_SEPARATOR)) {
+    std::string exec_path = path + "/" + command;
+    if(access(exec_path.c_str(), X_OK) == 0) {
+      return exec_path;
+    }
+  }
+
+  return "";
+}
+
+void handle_echo(const ParsedCommand& parsed_command) {
+  for(const std::string& arg : parsed_command.args) {
+    std::cout << arg << " ";
+  }
+  std::cout << std::endl;
+}
+
+void handle_type(const ParsedCommand& parsed_command) {
+  for(const std::string& arg : parsed_command.args) {
+    bool bFoundArg = false;
+    if(built_in_commands.find(arg) != built_in_commands.end()) {
+      std::cout << arg << " is a shell builtin" << std::endl;
+      bFoundArg = true;
+    } else {
+      std::string exec_path = find_executable_path(arg);
+      if(!exec_path.empty()) {
+        std::cout << arg << " is " << exec_path << std::endl;
+        bFoundArg = true;
+      }
+    }
+
+    if(!bFoundArg) {
+      std::cout << arg << ": not found" << std::endl;
+    }
+  }
+}
+
+void handle_external(const ParsedCommand& parsed_command, const std::string& user_input) {
+  std::string exec_path = find_executable_path(parsed_command.command);
+  if(exec_path.empty()) {
+    std::cout << user_input << ": command not found" << std::endl;
+    return;
+  }
+
+  std::system(user_input.c_str());
+}
+
+const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
+  {"echo", handle_echo},
+  {"type", handle_type}
+};
+
+bool repl(const std::string& user_input) {
+
+  ParsedCommand parsed_command = parse_command(user_input);
+  if(parsed_command.command == "exit") {
+    return false;
+  }
+  auto handler_it = built_in_handlers.find(parsed_command.command);
+  if(handler_it != built_in_handlers.end()) {
+    handler_it->second(parsed_command);
+    return true;
+  }
+
+  handle_external(parsed_command, user_input);
+  return true;
+}
+
 int main() {
   // Flush after every std::cout / std:cerr
   std::cout << std::unitbuf;
@@ -21,75 +119,14 @@ int main() {
     std::cout << "$ ";
     std::string user_input;
     std::getline(std::cin, user_input);
-    if(user_input == "exit") {
-      return 0;
-    }else if(user_input.substr(0,5) == "echo ") {
-      std::string args = user_input.substr(5);
-      std::stringstream ss(args);
-      std::string arg;
-      while(ss >> arg) {
-        std::cout << arg << " ";
-      }
-      std::cout << std::endl;
-    }else if(user_input.substr(0,5) == "type ") {
-      std::string args = user_input.substr(5);
-      std::stringstream ss(args);
-      std::string arg;
-      while(ss >> arg) {
-        //built in command
-        bool bFoundArg = false;
-        if(built_in_commands.find(arg) != built_in_commands.end()) {
-          std::cout << arg << " is a shell builtin" << std::endl;
-          bFoundArg = true;
-        }else {
-          //not a built in command, search for binary in PATH
-          char* path_env = std::getenv("PATH");
-          if(path_env != nullptr) { 
-            std::stringstream path_ss(path_env);
-            std::string path;
-            while(std::getline(path_ss, path, PATH_LIST_SEPARATOR)) {
-              std::string exec_path = path + "/" + arg;
-              // 0 means file exists and has exec permission
-              // -1 means no file/no exec permission
-              if(access(exec_path.c_str(), X_OK) == 0) {
-                std::cout << arg << " is " << exec_path << std::endl;
-                bFoundArg = true;
-                break;
-              }
-            }
-          }
-        }
-        //neither a built in command nor a executable in PATH. Print not found.
-        if(!bFoundArg) {
-          std::cout << arg << ": not found" << std::endl;
-        }
-      }
-    } else {
-      //check if command is an executable in PATH.
-      bool bExecuted = false;
-      char* path_env = std::getenv("PATH");
-      if(path_env != nullptr) {
-        std::stringstream user_input_ss(user_input);
-        std::stringstream path_ss(path_env);
-        std::string cmd;
-        user_input_ss >> cmd;
-        std::stringstream ss(path_env);
-        std::string path;
-        while(std::getline(path_ss, path, PATH_LIST_SEPARATOR)) {
-          std::string exec_path = path + "/" + cmd;
-          // 0 means file exists and has exec permission
-          // -1 means no file/no exec permission
-          if(access(exec_path.c_str(), X_OK) == 0) {
-            std::system(user_input.c_str());
-            bExecuted = true;
-            break;
-          }
-        }
-      }
-      if(!bExecuted) {
-      std::cout << user_input << ": command not found" << std::endl;
-      }
+    if(user_input.empty()) {
+      continue;
+    }
+
+    if(!repl(user_input)) {
+      break;
     }
   }
-  return 1;
+
+  return 0;
 }
