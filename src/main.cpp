@@ -34,7 +34,8 @@ std::vector<std::string> pre_process_args(const std::string& args) {
     // if and only if we come accross a '
     if(!is_inside_single_quote) {
       //if we are outside quotes, then only ' ' can break the word
-      //breaking means we store our buffer string cur uptill now in args
+      //breaking means we store our buffer string cur uptill now in
+      //process_args vector
       if(ch == ' ') {
         if(!cur.empty()) {
           processed_args.push_back(cur);
@@ -45,7 +46,7 @@ std::vector<std::string> pre_process_args(const std::string& args) {
     }
     cur += ch;
   }
-  
+
   if(!cur.empty()) {
     processed_args.push_back(cur);
   }
@@ -58,13 +59,11 @@ ParsedCommand parse_command(const std::string& user_input) {
   ParsedCommand parsed;
   iss >> parsed.command;
   std::string args;
+  //pushes rest of arguments from cmd end to end of input in args string
   std::getline(iss, args);
   //handle single quotes
   parsed.args = pre_process_args(args);
   std::string arg;
-  while(iss >> arg) {
-    parsed.args.push_back(arg);
-  }
 
   return parsed;
 }
