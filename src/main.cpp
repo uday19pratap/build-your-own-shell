@@ -33,9 +33,8 @@ std::vector<std::string> pre_process_args(const std::string& args) {
     }
     // if and only if we come accross a '
     if(!is_inside_single_quote) {
-      //if we are outside quotes, then only ' ' can break the word
-      //breaking means we store our buffer string cur uptill now in
-      //process_args vector
+      //inside quotes, only space breaks the arg
+      //then store buffer string cur in args vector
       if(ch == ' ') {
         if(!cur.empty()) {
           processed_args.push_back(cur);
@@ -44,6 +43,7 @@ std::vector<std::string> pre_process_args(const std::string& args) {
         continue;
       }
     }
+    //if (not within quotes + ch is a regular character) OR (within quotes)
     cur += ch;
   }
 
