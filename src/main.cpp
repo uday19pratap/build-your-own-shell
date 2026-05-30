@@ -23,8 +23,10 @@ std::vector<std::string> pre_process_args(const std::string& args) {
 
   std::vector<std::string> processed_args;
   std::string cur;
-  bool is_inside_single_quote = false;
-  bool is_inside_double_quote = false;
+
+  enum State {NORMAL, IN_SINGLE, IN_DOUBLE};
+  State state = NORMAL;
+
   // at a time we can only be inside one. if inside single quote double quotes are regular chars
   //and vice versa
 
@@ -32,18 +34,18 @@ std::vector<std::string> pre_process_args(const std::string& args) {
     //right now ' and " are same.. only difference is
     //inside ' , " has no special meaning and
     //inside " , ' has no special meaning
-    if(ch == '\'' && !is_inside_double_quote) {
-      is_inside_single_quote = !is_inside_single_quote;
+
+    //only one of ' / " is valid. Cant be inside both at at a time
+    if(ch == '\'' && state != IN_DOUBLE) {
+      state = (state == IN_SINGLE) ? NORMAL : IN_SINGLE;
       continue;
     }
-    if(ch == '"' && !is_inside_single_quote) {
-      is_inside_double_quote = !is_inside_double_quote;
+    if(ch == '"' && state != IN_SINGLE) {
+      state = (state == IN_DOUBLE) ? NORMAL : IN_DOUBLE;
       continue;
     }
 
-    if(is_inside_single_quote) {
-      cur += ch;
-    }else if(is_inside_double_quote) {
+    if(state == IN_SINGLE || state == IN_DOUBLE) {
       cur += ch;
     }else {
       if(ch == ' ' && !cur.empty()) {
