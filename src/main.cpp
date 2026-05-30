@@ -6,6 +6,7 @@
 #include <functional>
 #include <unistd.h>
 #include <vector>
+#include<fcntl.h>
 
 #ifdef _WIN32
 constexpr char PATH_LIST_SEPARATOR = ';';
@@ -151,7 +152,7 @@ void handle_type(const ParsedCommand& parsed_command) {
 void handle_external(const ParsedCommand& parsed_command, const std::string& user_input) {
   std::string exec_path = find_executable_path(parsed_command.command);
   if(exec_path.empty()) {
-    std::cout << user_input << ": command not found" << std::endl;
+    std::cout << parsed_command.command << ": command not found" << std::endl;
     return;
   }
 
@@ -163,21 +164,43 @@ const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"type", handle_type}
 };
 
+void adjust_out_stream(ParsedCommand& parsed_command) {
+  std::vector<std::string> args = parsed_command.args;
+  if(args.size() >= 3) {
+    std::string second_last_args = args[args.size() - 2];
+    if(second_last_args == ">" || second_last_args == "1>") {
+      std::string fname = args[args.size() - 1];
+
+      //set flags to make it write only, create if non-existent and truncate(erase and start fresh) 0644 sets permissions
+      int new_fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+      dup2(new_fd, 1);//change output stream to point to new file descriptor
+
+      //pop the > arg and the filename arg
+      parsed_command.args.pop_back();
+      parsed_command.args.pop_back();
+    }
+  }
+}
+
 bool repl(const std::string& user_input) {
 
   ParsedCommand parsed_command = parse_command(user_input);
   if(parsed_command.command == "exit") {
     return false;
   }
+
+  int saved_fd = dup(1);
+  adjust_out_stream(parsed_command);
   auto handler_it = built_in_handlers.find(parsed_command.command);
   if(handler_it != built_in_handlers.end()) {
     handler_it->second(parsed_command);
-    return true;
+  }else {
+    handle_external(parsed_command, user_input);
   }
-
-  handle_external(parsed_command, user_input);
+  dup2(saved_fd, 1);
   return true;
 }
+
 
 int main() {
   // Flush after every std::cout / std:cerr
