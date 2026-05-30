@@ -176,7 +176,7 @@ void adjust_out_stream(ParsedCommand& parsed_command) {
       std::string fname = args[args.size() - 1];
 
       int new_fd;
-      if(second_last_args == ">>" || second_last_args == "1>>") {
+      if(second_last_args == ">>" || second_last_args == "1>>" || second_last_args == "2>>") {
       // set falgs to make it write only, create if non-existent and append 0644 for permissions
         new_fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
       }else {
