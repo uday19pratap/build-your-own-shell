@@ -170,7 +170,7 @@ void adjust_out_stream(ParsedCommand& parsed_command) {
     std::string second_last_args = args[args.size() - 2];
     if(second_last_args == ">" || second_last_args == "1>" ||
        second_last_args == "2>" ||
-       second_last_args == ">>" || second_last_args == "1>>"
+       second_last_args == ">>" || second_last_args == "1>>" ||
        second_last_args == "2>>") {
 
       std::string fname = args[args.size() - 1];
