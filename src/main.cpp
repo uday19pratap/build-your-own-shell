@@ -49,7 +49,6 @@ std::vector<std::string> pre_process_args(const std::string& args) {
       if(ch == ' ' && !cur.empty()) {
         processed_args.push_back(cur);
         cur.clear();
-        std::cout << "args:" << cur << std::endl;
       }else if(ch == ' ') {
         continue;
       }else {
