@@ -23,28 +23,35 @@ std::vector<std::string> pre_process_args(const std::string& args) {
   std::vector<std::string> processed_args;
   std::string cur;
   bool is_inside_single_quote = false;
+  bool is_inside_double_quote = false;
+  // at a time we can only be inside one. if inside single quote double quotes are regular chars
+  //and vice versa
 
   for(char ch : args) {
-    // whether we are within quotes or not, we will toggle is_inside_single_quote
-    //if we come accross a ' and then continue. the ' will not be part of our buffer string
-    if(ch == '\'') {
+    //right now ' and " are same.. only difference is
+    //inside ' , " has no special meaning and
+    //inside " , ' has no special meaning
+    if(ch == '\'' && !is_inside_double_quote) {
       is_inside_single_quote = !is_inside_single_quote;
       continue;
     }
-    // if and only if we come accross a '
-    if(!is_inside_single_quote) {
-      //inside quotes, only space breaks the arg
-      //then store buffer string cur in args vector
-      if(ch == ' ') {
-        if(!cur.empty()) {
-          processed_args.push_back(cur);
-          cur = "";
-        }
-        continue;
+    if(ch == '"' && !is_inside_single_quote) {
+      is_inside_double_quote = !is_inside_double_quote;
+      continue;
+    }
+
+    if(is_inside_single_quote) {
+      cur += ch;
+    }else if(is_inside_double_quote) {
+      cur += ch;
+    }else {
+      if(ch == ' ' && !cur.empty()) {
+        processed_args.push_back(cur);
+        cur.clear();
+      }else {
+        cur += ch;
       }
     }
-    //if (not within quotes + ch is a regular character) OR (within quotes)
-    cur += ch;
   }
 
   if(!cur.empty()) {
