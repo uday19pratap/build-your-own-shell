@@ -29,8 +29,13 @@ std::vector<std::string> pre_process_args(const std::string& args) {
 
   // at a time we can only be inside one. if inside single quote double quotes are regular chars
   //and vice versa
-
+  bool is_escape_char_activated = false;
   for(char ch : args) {
+    if(is_escape_char_activated) {
+      cur += ch;
+      is_escape_char_activated = false;
+      continue;
+    }
     //right now ' and " are same.. only difference is
     //inside ' , " has no special meaning and
     //inside " , ' has no special meaning
@@ -48,6 +53,10 @@ std::vector<std::string> pre_process_args(const std::string& args) {
     if(state == IN_SINGLE || state == IN_DOUBLE) {
       cur += ch;
     }else {
+      if(ch == '\\') {
+        is_escape_char_activated = true;
+        continue;
+      }
       if(ch == ' ' && !cur.empty()) {
         processed_args.push_back(cur);
         cur.clear();
