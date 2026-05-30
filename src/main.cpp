@@ -20,6 +20,7 @@ struct ParsedCommand {
 };
 
 std::vector<std::string> pre_process_args(const std::string& args) {
+
   std::vector<std::string> processed_args;
   std::string cur;
   bool is_inside_single_quote = false;
@@ -48,6 +49,9 @@ std::vector<std::string> pre_process_args(const std::string& args) {
       if(ch == ' ' && !cur.empty()) {
         processed_args.push_back(cur);
         cur.clear();
+        std::cout << "args:" << cur << std::endl;
+      }else if(ch == ' ') {
+        continue;
       }else {
         cur += ch;
       }
