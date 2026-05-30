@@ -169,15 +169,24 @@ void adjust_out_stream(ParsedCommand& parsed_command) {
   if(args.size() >= 3) {
     std::string second_last_args = args[args.size() - 2];
     if(second_last_args == ">" || second_last_args == "1>" ||
-       second_last_args == "2>") {
+       second_last_args == "2>" ||
+       second_last_args == ">>" ||
+       second_last_args == "2>>") {
 
       std::string fname = args[args.size() - 1];
+
+      int new_fd;
+      if(second_last_args == ">>" || second_last_args == ">>") {
+      // set falgs to make it write only, create if non-existent and append 0644 for permissions
+        new_fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
+      }else {
       //set flags to make it write only, create if non-existent and truncate(erase and start fresh) 0644 sets permissions
-      int new_fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+      new_fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+      }
       //pop the > arg and the filename arg
       parsed_command.args.pop_back();
       parsed_command.args.pop_back();
-      if(second_last_args == "2>") {
+      if(second_last_args == "2>" || second_last_args == "2>>") {
         dup2(new_fd, 2);
       }else {
         dup2(new_fd, 1); //change output stream to point to new file descriptor
