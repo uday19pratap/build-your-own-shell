@@ -21,7 +21,7 @@ struct ParsedCommand {
 
 std::unordered_set<char> special_characters_in_double_quotes_set = {'\\', '$', '`', '\n', '"'};
 
-std::vector<std::string> pre_process_args(const std::string& args) {
+std::vector<std::string> pre_process_input(const std::string& input) {
 
   std::vector<std::string> processed_args;
   std::string cur;
@@ -32,7 +32,7 @@ std::vector<std::string> pre_process_args(const std::string& args) {
   // at a time we can only be inside one. if inside single quote double quotes are regular chars
   //and vice versa
   bool is_escape_char_activated = false;
-  for(char ch : args) {
+  for(char ch : input) {
 
     //prev character was \ so this one will 
     if(is_escape_char_activated) {
@@ -89,14 +89,15 @@ std::vector<std::string> pre_process_args(const std::string& args) {
 
 ParsedCommand parse_command(const std::string& user_input) {
 
-  std::istringstream iss(user_input);
   ParsedCommand parsed;
-  iss >> parsed.command;
-  std::string args;
-  //pushes rest of arguments from cmd end to end of input in args string
-  std::getline(iss, args);
-  //handle single quotes
-  parsed.args = pre_process_args(args);
+
+  std::vector<std::string> tokens = pre_process_input(user_input);
+  if(tokens.size() > 0) {
+   parsed.command = tokens[0];
+  }
+  for(int i = 1; i < tokens.size(); i++) {
+    parsed.args.push_back(tokens[i]);
+  }
   return parsed;
 }
 
