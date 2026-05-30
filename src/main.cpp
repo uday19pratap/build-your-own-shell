@@ -31,6 +31,8 @@ std::vector<std::string> pre_process_args(const std::string& args) {
   //and vice versa
   bool is_escape_char_activated = false;
   for(char ch : args) {
+
+    //prev character was \ so this one will 
     if(is_escape_char_activated) {
       cur += ch;
       is_escape_char_activated = false;
