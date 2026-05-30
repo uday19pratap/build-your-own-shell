@@ -19,6 +19,8 @@ struct ParsedCommand {
   std::vector<std::string> args;
 };
 
+std::unordered_set<char> special_characters_in_double_quotes_set = {'\\', '$', '`', '\n', '"'};
+
 std::vector<std::string> pre_process_args(const std::string& args) {
 
   std::vector<std::string> processed_args;
@@ -34,6 +36,11 @@ std::vector<std::string> pre_process_args(const std::string& args) {
 
     //prev character was \ so this one will 
     if(is_escape_char_activated) {
+      //only escape certain special characters
+      // like " \ $ ` and newline
+      if(state == IN_DOUBLE && !special_characters_in_double_quotes_set.contains(ch)) {
+        cur += '\\';
+      }
       cur += ch;
       is_escape_char_activated = false;
       continue;
@@ -53,6 +60,10 @@ std::vector<std::string> pre_process_args(const std::string& args) {
     }
 
     if(state == IN_SINGLE || state == IN_DOUBLE) {
+      if(ch == '\\' && state == IN_DOUBLE) {
+        is_escape_char_activated = true;
+        continue;
+      }
       cur += ch;
     }else {
       if(ch == '\\') {
