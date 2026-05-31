@@ -3,6 +3,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include <functional>
 #include <unistd.h>
 #include <vector>
@@ -218,65 +219,94 @@ bool repl(const std::string& user_input) {
   return true;
 }
 
-void auto_completion_handler(std::string& user_input) {
-  bool ring_bell = true; // ring bell if nothing matches with tab
-  if(!user_input.empty() && user_input.back() != ' ') {
-
-    for(const std::string& built_in_command : built_in_commands) {
-      if(built_in_command.starts_with(user_input)) {
-        user_input = built_in_command + " ";
-        std::cout << "\r$ " << user_input << std::flush;
-        ring_bell = false;
-        break;    // if prompt is a prefix of a built-in-cmd
-      }           // complete command and append a space
+std::set<std::string> matched_commands_set;
+void auto_completion_handler(std::string& user_input, bool second_consecutive_tab) {
+  
+  if(user_input.empty() || user_input.back() == ' ') {
+    std::cout << "\a" << std::flush; // ring bell
+    return;
+  }
+  if(second_consecutive_tab == true) {
+    if(matched_commands_set.size() == 1) {
+      // update the actual input buffer so subsequent backspaces behave correctly
+      user_input = *(matched_commands_set.begin()) + " ";
+      std::cout << "\r$ " << user_input << std::flush;
+    }else if(matched_commands_set.size() > 1) {
+      std::cout << std::endl;
+      for(const auto& match : matched_commands_set) {
+        std::cout << match << "  " << std::flush;
+      }
+      std::cout << std::endl << "$ " << user_input << std::flush;
+    }else {
+      // 0 matches --> ring the bell
+      std::cout << "\a" << std::flush;
     }
-    if(ring_bell == true) {
-      char* path_env = std::getenv("PATH");
-      if(path_env) {
-        std::stringstream path_ss(path_env);
-        std::string dir;
-        while(std::getline(path_ss, dir, PATH_LIST_SEPARATOR)) {
-          if(!std::filesystem::is_directory(dir)) {
-            continue;
-          }
-          for(const auto& fentry : std::filesystem::directory_iterator(dir)) {
-            if(!std::filesystem::is_regular_file(fentry.path().string()) ||
-               access(fentry.path().string().c_str(), X_OK) != 0) {
-              continue;
-            }
-            std::string local_fname = fentry.path().filename().string();
-            if(local_fname.starts_with(user_input)) {
-              //a match
-              user_input = local_fname + " ";
-              std::cout << "\r$ " << user_input << std::flush;
-              ring_bell = false;
-              break;
-            }
-          }
-          if(ring_bell == false) {
-            break;
-          }
+    matched_commands_set.clear();
+    return;
+  }
+  //find matches in built-in-commmands
+  for(const std::string& built_in_command : built_in_commands) {
+    if(built_in_command.starts_with(user_input)) {
+      matched_commands_set.insert(built_in_command);
+    }           
+  }
+  //find matches in exec(binaries)
+  char* path_env = std::getenv("PATH");
+  if(path_env) {
+    std::stringstream path_ss(path_env);
+    std::string dir;
+    while(std::getline(path_ss, dir, PATH_LIST_SEPARATOR)) {
+      std::error_code dir_ec;
+      if(!std::filesystem::is_directory(dir, dir_ec) || dir_ec) {
+        continue;
+      }
+
+      std::error_code it_ec;
+      std::filesystem::directory_iterator it(dir, it_ec);
+      if(it_ec) {
+        // couldn't open this directory; skip it
+        continue;
+      }
+
+      for(; it != std::filesystem::directory_iterator(); it.increment(it_ec)) {
+        if(it_ec) {
+          // skip this problematic entry and continue iterating
+          it_ec.clear();
+          continue;
+        }
+
+        std::error_code st_ec;
+        const auto p = it->path();
+        if(!std::filesystem::is_regular_file(p, st_ec) || st_ec) {
+          continue;
+        }
+        if(access(p.string().c_str(), X_OK) != 0) {
+          continue;
+        }
+        std::string local_fname = p.filename().string();
+        if(local_fname.rfind(user_input, 0) == 0) {
+          // a match
+          matched_commands_set.insert(local_fname);
         }
       }
     }
-
   }
-  if(ring_bell) {
-    std::cout << "\a" << std::flush; // ring bell
-  }
+  //ring the bell on the first tab
+  std::cout << "\a" << std::flush;
 }
 
 std::string register_keystrokes_for_command() {
   std::string user_input;
   char ch;
-
+  bool second_consecutive_tab = false;
   while(true) {
     read(STDIN_FILENO, &ch, 1);
     if(ch == '\n') { //for newline
       std::cout << std::endl << std::flush;
       break;
     }else if (ch == '\t') { //for tab...auto completion
-      auto_completion_handler(user_input);
+      auto_completion_handler(user_input, second_consecutive_tab);
+      second_consecutive_tab = !second_consecutive_tab;
     }else if(ch == 8 || ch == 127) { //for backspace/delete
       if(user_input.size() > 0) {
         user_input.pop_back();
