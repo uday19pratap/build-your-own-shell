@@ -249,6 +249,7 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
     std::cout << "\a" << std::flush; // ring bell
     return false; // no need to wait for second tab. no results...so equivalent to result being flushed
   }
+
   if(second_consecutive_tab == true) {
     if(matched_commands_set.size() > 1) {
       std::cout << std::endl;
@@ -263,6 +264,7 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
     matched_commands_set.clear();
     return false;
   }
+
   //find matches in built-in-commmands
   for(const std::string& built_in_command : built_in_commands) {
     if(built_in_command.starts_with(user_input)) {
@@ -311,6 +313,7 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
     }
   }
 
+  //std::cout << "matchsize: " << matched_commands_set.size() << std::endl;
   if(matched_commands_set.size() == 1) {
     user_input = *(matched_commands_set.begin()) + " ";
     std::cout << "\r$ " << user_input << std::flush;
@@ -321,8 +324,10 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
 
     //dont need to send matched_commands_list as parameter because it is a global variable
     std::string lcp = longest_common_prefix_string();
-    user_input = lcp;
-    std::cout << "\r$ " << user_input << std::flush; //dont add space, because LCP string may not be a suggestion
+    if(lcp.size() > user_input.size()) {
+      user_input = lcp;
+      std::cout << "\r$ " << user_input << std::flush; //dont add space, because LCP string may not be a suggestion
+    }
     return true;
   }else {
     //ring the bell on the first tab if no matches
@@ -338,9 +343,10 @@ std::string register_keystrokes_for_command() {
   while(true) {
     read(STDIN_FILENO, &ch, 1);
     if(ch != '\t') {
+      matched_commands_set.clear();
       second_consecutive_tab = false;
     }
-    
+
     if(ch == '\n') { //for newline
       std::cout << std::endl << std::flush;
       break;
