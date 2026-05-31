@@ -16,7 +16,7 @@ constexpr char PATH_LIST_SEPARATOR = ';';
 #else
 constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
-const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit"};
+const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete"};
 
 struct ParsedCommand {
   std::string command;
