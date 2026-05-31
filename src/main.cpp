@@ -8,6 +8,7 @@
 #include <vector>
 #include<fcntl.h>
 #include<termios.h>
+#include<filesystem>
 
 #ifdef _WIN32
 constexpr char PATH_LIST_SEPARATOR = ';';
@@ -217,6 +218,54 @@ bool repl(const std::string& user_input) {
   return true;
 }
 
+void auto_completion_handler(std::string& user_input) {
+  bool ring_bell = true; // ring bell if nothing matches with tab
+  if(!user_input.empty() && user_input.back() != ' ') {
+
+    for(const std::string& built_in_command : built_in_commands) {
+      if(built_in_command.starts_with(user_input)) {
+        user_input = built_in_command + " ";
+        std::cout << "\r$ " << user_input << std::flush;
+        ring_bell = false;
+        break;    // if prompt is a prefix of a built-in-cmd
+      }           // complete command and append a space
+    }
+    if(ring_bell == true) {
+      char* path_env = std::getenv("PATH");
+      if(path_env) {
+        std::stringstream path_ss(path_env);
+        std::string dir;
+        while(std::getline(path_ss, dir, PATH_LIST_SEPARATOR)) {
+          if(!std::filesystem::is_directory(dir)) {
+            continue;
+          }
+          for(const auto& fentry : std::filesystem::directory_iterator(dir)) {
+            if(!std::filesystem::is_regular_file(fentry.path().string()) ||
+               access(fentry.path().string().c_str(), X_OK) != 0) {
+              continue;
+            }
+            std::string local_fname = fentry.path().filename().string();
+            if(local_fname.starts_with(user_input)) {
+              //a match
+              user_input = local_fname + " ";
+              std::cout << "\r$ " << user_input << std::flush;
+              ring_bell = false;
+              break;
+            }
+          }
+          if(ring_bell == false) {
+            break;
+          }
+        }
+      }
+    }
+
+  }
+  if(ring_bell) {
+    std::cout << "\a" << std::flush; // ring bell
+  }
+}
+
 std::string register_keystrokes_for_command() {
   std::string user_input;
   char ch;
@@ -227,20 +276,7 @@ std::string register_keystrokes_for_command() {
       std::cout << std::endl << std::flush;
       break;
     }else if (ch == '\t') { //for tab...auto completion
-      bool ring_bell = true; //ring bell if nothing matches with tab
-      if(user_input[user_input.size() - 1] != ' ') {
-        for(std::string built_in_command : built_in_commands) {
-          if(built_in_command.starts_with(user_input)) {
-            user_input = built_in_command + " ";
-            std::cout << "\r$ " << user_input << std::flush;
-            ring_bell = false;
-            break;    // if prompt is a prefix of a built-in-cmd
-          }           // complete command and append a space
-        }
-      }
-      if(ring_bell) {
-        std::cout << "\a"; //ring bell
-      }
+      auto_completion_handler(user_input);
     }else if(ch == 8 || ch == 127) { //for backspace/delete
       if(user_input.size() > 0) {
         user_input.pop_back();
@@ -273,6 +309,8 @@ int main() {
       continue;
     }
 
+    //repl stand for read, evaluate,process, loop
+    // the standard design of any shell process
     if(!repl(user_input)) {
       break;
     }
