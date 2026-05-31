@@ -227,14 +227,19 @@ std::string register_keystrokes_for_command() {
       std::cout << std::endl << std::flush;
       break;
     }else if (ch == '\t') { //for tab...auto completion
+      bool ring_bell = true; //ring bell if nothing matches with tab
       if(user_input[user_input.size() - 1] != ' ') {
         for(std::string built_in_command : built_in_commands) {
           if(built_in_command.starts_with(user_input)) {
             user_input = built_in_command + " ";
             std::cout << "\r$ " << user_input << std::flush;
+            ring_bell = false;
             break;    // if prompt is a prefix of a built-in-cmd
           }           // complete command and append a space
         }
+      }
+      if(ring_bell) {
+        std::cout << "\a"; //ring bell
       }
     }else if(ch == 8 || ch == 127) { //for backspace/delete
       if(user_input.size() > 0) {
