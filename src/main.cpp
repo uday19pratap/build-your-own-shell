@@ -220,18 +220,14 @@ bool repl(const std::string& user_input) {
 }
 
 std::set<std::string> matched_commands_set;
-void auto_completion_handler(std::string& user_input, bool second_consecutive_tab) {
+bool auto_completion_handler(std::string& user_input, bool second_consecutive_tab) {
   
   if(user_input.empty() || user_input.back() == ' ') {
     std::cout << "\a" << std::flush; // ring bell
     return;
   }
   if(second_consecutive_tab == true) {
-    if(matched_commands_set.size() == 1) {
-      // update the actual input buffer so subsequent backspaces behave correctly
-      user_input = *(matched_commands_set.begin()) + " ";
-      std::cout << "\r$ " << user_input << std::flush;
-    }else if(matched_commands_set.size() > 1) {
+    if(matched_commands_set.size() > 1) {
       std::cout << std::endl;
       for(const auto& match : matched_commands_set) {
         std::cout << match << "  " << std::flush;
@@ -242,7 +238,7 @@ void auto_completion_handler(std::string& user_input, bool second_consecutive_ta
       std::cout << "\a" << std::flush;
     }
     matched_commands_set.clear();
-    return;
+    return true;
   }
   //find matches in built-in-commmands
   for(const std::string& built_in_command : built_in_commands) {
@@ -291,8 +287,16 @@ void auto_completion_handler(std::string& user_input, bool second_consecutive_ta
       }
     }
   }
-  //ring the bell on the first tab
-  std::cout << "\a" << std::flush;
+
+  if(matched_commands_set.size() == 1) {
+    user_input = *(matched_commands_set.begin()) + " ";
+    std::cout << "\r$ " << user_input << std::flush;
+    return true; //true means -->flushed.. so no scope for second tab
+  }else {
+    //ring the bell on the first tab if no matches
+    std::cout << "\a" << std::flush;
+    return false;
+  }
 }
 
 std::string register_keystrokes_for_command() {
@@ -305,8 +309,10 @@ std::string register_keystrokes_for_command() {
       std::cout << std::endl << std::flush;
       break;
     }else if (ch == '\t') { //for tab...auto completion
-      auto_completion_handler(user_input, second_consecutive_tab);
-      second_consecutive_tab = !second_consecutive_tab;
+      bool are_results_flushed = auto_completion_handler(user_input, second_consecutive_tab);
+      if(!are_results_flushed) {
+        second_consecutive_tab = true;
+      }
     }else if(ch == 8 || ch == 127) { //for backspace/delete
       if(user_input.size() > 0) {
         user_input.pop_back();
