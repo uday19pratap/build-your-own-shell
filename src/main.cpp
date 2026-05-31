@@ -317,6 +317,8 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
     matched_commands_set.clear();
     return false; //false means -->flushed.. so no scope for second tab
   }else if(matched_commands_set.size() > 1) {
+   //extend suggestion to LCP. then on next tab display all the options
+
     //dont need to send matched_commands_list as parameter because it is a global variable
     std::string lcp = longest_common_prefix_string();
     user_input = lcp;
@@ -335,6 +337,10 @@ std::string register_keystrokes_for_command() {
   bool second_consecutive_tab = false;
   while(true) {
     read(STDIN_FILENO, &ch, 1);
+    if(ch != '\t') {
+      second_consecutive_tab = false;
+    }
+    
     if(ch == '\n') { //for newline
       std::cout << std::endl << std::flush;
       break;
