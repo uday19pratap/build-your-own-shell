@@ -224,7 +224,7 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
   
   if(user_input.empty() || user_input.back() == ' ') {
     std::cout << "\a" << std::flush; // ring bell
-    return true; // no need to wait for second tab. no results...so equivalent to result being flushed
+    return false; // no need to wait for second tab. no results...so equivalent to result being flushed
   }
   if(second_consecutive_tab == true) {
     if(matched_commands_set.size() > 1) {
@@ -238,7 +238,7 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
       std::cout << "\a" << std::flush;
     }
     matched_commands_set.clear();
-    return true;
+    return false;
   }
   //find matches in built-in-commmands
   for(const std::string& built_in_command : built_in_commands) {
@@ -291,11 +291,12 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
   if(matched_commands_set.size() == 1) {
     user_input = *(matched_commands_set.begin()) + " ";
     std::cout << "\r$ " << user_input << std::flush;
-    return true; //true means -->flushed.. so no scope for second tab
+    matched_commands_set.clear();
+    return false; //false means -->flushed.. so no scope for second tab
   }else {
     //ring the bell on the first tab if no matches
     std::cout << "\a" << std::flush;
-    return false;
+    return true;
   }
 }
 
@@ -309,10 +310,7 @@ std::string register_keystrokes_for_command() {
       std::cout << std::endl << std::flush;
       break;
     }else if (ch == '\t') { //for tab...auto completion
-      bool are_results_flushed = auto_completion_handler(user_input, second_consecutive_tab);
-      if(!are_results_flushed) {
-        second_consecutive_tab = true;
-      }
+      bool second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
     }else if(ch == 8 || ch == 127) { //for backspace/delete
       if(user_input.size() > 0) {
         user_input.pop_back();
@@ -325,6 +323,7 @@ std::string register_keystrokes_for_command() {
   }
   return user_input;
 }
+
 void set_raw_terminal_mode_for_keystrokes() {
   termios original_termios;
   tcgetattr(STDIN_FILENO, &original_termios);
@@ -332,6 +331,7 @@ void set_raw_terminal_mode_for_keystrokes() {
   raw_termios.c_lflag = raw_termios.c_lflag & ~(ICANON | ECHO);
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
+
 int main() {
   // Flush after every std::cout / std:cerr
   std::cout << std::unitbuf;
