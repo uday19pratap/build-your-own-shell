@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <vector>
 #include<fcntl.h>
+#include<termios.h>
 
 #ifdef _WIN32
 constexpr char PATH_LIST_SEPARATOR = ';';
@@ -216,16 +217,53 @@ bool repl(const std::string& user_input) {
   return true;
 }
 
+std::string register_keystrokes_for_command() {
+  std::string user_input;
+  char ch;
 
+  while(true) {
+    read(STDIN_FILENO, &ch, 1);
+    if(ch == '\n') { //for newline
+      std::cout << std::endl << std::flush;
+      break;
+    }else if (ch == '\t') { //for tab...auto completion
+      if(user_input[user_input.size() - 1] != ' ') {
+        for(std::string built_in_command : built_in_commands) {
+          if(built_in_command.starts_with(user_input)) {
+            user_input = built_in_command + " ";
+            std::cout << "\r$ " << user_input << std::flush;
+            break;    // if prompt is a prefix of a built-in-cmd
+          }           // complete command and append a space
+        }
+      }
+    }else if(ch == 8 || ch == 127) { //for backspace/delete
+      if(user_input.size() > 0) {
+        user_input.pop_back();
+        std::cout << "\b \b" << std::flush; // hello^ -> hell^o -> hell ^ -> hell^
+      }
+    }else {
+      std::cout << ch;
+      user_input.push_back(ch);
+    }
+  }
+  return user_input;
+}
+void set_raw_terminal_mode_for_keystrokes() {
+  termios original_termios;
+  tcgetattr(STDIN_FILENO, &original_termios);
+  termios raw_termios = original_termios;
+  raw_termios.c_lflag = raw_termios.c_lflag & ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
+}
 int main() {
   // Flush after every std::cout / std:cerr
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
 
+  set_raw_terminal_mode_for_keystrokes();
   while(true) {
     std::cout << "$ ";
-    std::string user_input;
-    std::getline(std::cin, user_input);
+    std::string user_input = register_keystrokes_for_command();
     if(user_input.empty()) {
       continue;
     }
