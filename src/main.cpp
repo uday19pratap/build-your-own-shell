@@ -219,7 +219,30 @@ bool repl(const std::string& user_input) {
   return true;
 }
 
+
 std::set<std::string> matched_commands_set;
+std::string longest_common_prefix_string() {
+  if(matched_commands_set.size() == 0) {
+    return "";
+  }
+  //for a sorted set of strings
+  //the lcp string is the lcp of the first and last strings in the set
+  std::string first = *(matched_commands_set.begin());
+  std::string last = *(matched_commands_set.rbegin());
+
+  size_t i = 0;
+  while(true) {
+    if(i == first.size() || i == last.size()) {
+      break;
+    }
+    if(first[i] != last[i]) {
+      break;
+    }
+    i++;
+  }
+  std::string lcp = first.substr(0, i);
+  return lcp;
+}
 bool auto_completion_handler(std::string& user_input, bool second_consecutive_tab) {
   
   if(user_input.empty() || user_input.back() == ' ') {
@@ -293,6 +316,12 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
     std::cout << "\r$ " << user_input << std::flush;
     matched_commands_set.clear();
     return false; //false means -->flushed.. so no scope for second tab
+  }else if(matched_commands_set.size() > 1) {
+    //dont need to send matched_commands_list as parameter because it is a global variable
+    std::string lcp = longest_common_prefix_string();
+    user_input = lcp;
+    std::cout << "\r$ " << user_input << std::flush; //dont add space, because LCP string may not be a suggestion
+    return true;
   }else {
     //ring the bell on the first tab if no matches
     std::cout << "\a" << std::flush;
