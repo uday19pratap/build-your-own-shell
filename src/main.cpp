@@ -224,7 +224,7 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
   
   if(user_input.empty() || user_input.back() == ' ') {
     std::cout << "\a" << std::flush; // ring bell
-    return;
+    return true; // no need to wait for second tab. no results...so equivalent to result being flushed
   }
   if(second_consecutive_tab == true) {
     if(matched_commands_set.size() > 1) {
