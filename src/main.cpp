@@ -327,6 +327,7 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
     if(lcp.size() > user_input.size()) {
       user_input = lcp;
       std::cout << "\r$ " << user_input << std::flush; //dont add space, because LCP string may not be a suggestion
+      return false;
     }
     return true;
   }else {
