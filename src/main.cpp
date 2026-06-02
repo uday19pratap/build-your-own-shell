@@ -415,7 +415,6 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
 }
 
 void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& parsed_command, const std::string& user_input, bool& consecutive_completer_tab) {
-  std::cout << std::endl << "CANDIDATES SIZE: " << candidates.size() << std::endl;
 
   if(candidates.size() == 1) {
     //move cursor behind. So we can override the half completed argument
@@ -466,9 +465,9 @@ std::string register_keystrokes_for_command() {
       ParsedCommand parsed_command = parse_command(user_input);
       if(!completer_consecutive_tab) {
         candidates = run_completer_script(parsed_command, user_input);
+        std::cout << std::endl << "CANDIDATES SIZE: " << candidates.size() << std::endl;
       }
       completer_auto_complete(candidates, parsed_command, user_input, completer_consecutive_tab);
-      //std::cout << "CANDIDATES: " << candidates.size() << std::endl;
       if(candidates.size() == 0) {
         bool second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
       }
