@@ -393,12 +393,10 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
   // a series of commands.
   char* old_COMP_LINE = std::getenv("COMP_LINE");
   char* old_COMP_POINT = std::getenv("COMP_POINT");
-  char ch = char(user_input.size() + '0');
-  char str[2];
-  str[0] = ch;
-  str[1] = '\0';
+
+  std::string point_str = std::to_string(user_input.size());
   setenv("COMP_LINE", user_input.c_str(), 1);
-  setenv("COMP_POINT", str, 1);
+  setenv("COMP_POINT", point_str.c_str(), 1);
   FILE* pipe = popen(exec.c_str(), "r");
   char buffer[256];
   while(fgets(buffer, sizeof(buffer), pipe)) {
