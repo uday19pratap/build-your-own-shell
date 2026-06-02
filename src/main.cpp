@@ -394,7 +394,7 @@ std::set<std::string> run_completer_script(std::string user_input) {
   // the child process triggered with completer_script, whatever it writes onto its std out stream
   // we can read from it only.. with "w" we could write to child's input stream and drive it through
   // a series of commands.
-  FILE* pipe = popen(completer_script, "r");
+  FILE* pipe = popen(exec.c_str(), "r");
   char buffer[256];
   while(fgets(buffer, sizeof(buffer), pipe)) {
     std::string line = buffer;
