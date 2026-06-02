@@ -386,6 +386,8 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
   }
   if(args.size() > 1) {
     exec += args[args.size() - 2]; //argv[2] --> preceeding word being completed
+  }else if(args.size() == 1) {
+    exec += parsed_command.command;
   }
   // "r" mode makes sure you can only read from the pipe
   // the child process triggered with completer_script, whatever it writes onto its std out stream
