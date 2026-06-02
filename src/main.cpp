@@ -372,11 +372,8 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
   }
 }
 
-std::set<std::string> run_completer_script(std::string user_input) {
+std::set<std::string> run_completer_script(const ParsedCommand& parsed_command) {
   std::set<std::string> completer_script_results;
-
-  ParsedCommand parsed_command = parse_command(user_input);
-
   auto it = completeMap.find(parsed_command.command);
   if(it == completeMap.end()) {
     return completer_script_results;
@@ -409,8 +406,18 @@ std::set<std::string> run_completer_script(std::string user_input) {
   return completer_script_results;
 }
 
-void completer_auto_complete(std::set<std::string>& candidates) {
+void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& parsed_command) {
   if(candidates.size() == 1) {
+
+    //move cursor behind. So we can override the half completed argument
+    //with completer script reply stored in candidates set
+    if(parsed_command.args.size() > 0) {
+      int delSize = parsed_command.args.size();
+      for(int i = 0; i < delSize; i++) {
+        std::cout << "\b";
+      }
+    }
+    //write
     std::cout << *candidates.begin() << " " << std::flush;
   }
   return;
@@ -430,8 +437,9 @@ std::string register_keystrokes_for_command() {
       std::cout << std::endl << std::flush;
       break;
     }else if (ch == '\t') { //for tab...auto completion
-      std::set<std::string> candidates = run_completer_script(user_input);
-      completer_auto_complete(candidates);
+      ParsedCommand parsed_command = parse_command(user_input);
+      std::set<std::string> candidates = run_completer_script(parsed_command);
+      completer_auto_complete(candidates, parsed_command);
       //std::cout << "CANDIDATES: " << candidates.size() << std::endl;
       if(candidates.size() == 0) {
         bool second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
