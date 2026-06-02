@@ -167,7 +167,7 @@ void handle_complete(const ParsedCommand& parsed_command) {
   if(idx < args.size() - 1) {
     auto it = completeMap.find(args[idx + 1]);
     if(it == completeMap.end()) {
-      std::cout << "complete: " << it->first << ": no completion specification" << std::endl;
+      std::cout << "complete: " << args[idx + 1] << ": no completion specification" << std::endl;
     }else {
       std::cout << "complete -C '" << it->second << "' " << it->first << std::endl;
     }
@@ -175,9 +175,11 @@ void handle_complete(const ParsedCommand& parsed_command) {
 
   // support for -C option of complete command
   it = std::find(args.begin(), args.end(), "-C");
-  size_t idx = it - args.begin();
-  if(idx < args.size() - 2) {
-    completeMap[*(it + 2)] = *(it + 1);
+  idx = it - args.begin();
+  if(idx < args.size() - 2 && access((*(it + 1)).c_str(), X_OK) == 0) {
+    std::string keyCommand = *(it + 2);
+    std::string valuePath = *(it + 1);
+    completeMap[keyCommand] = valuePath;
   }
 }
 void handle_external(const ParsedCommand& parsed_command, const std::string& user_input) {
