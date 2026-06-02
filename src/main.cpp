@@ -254,14 +254,14 @@ bool repl(const std::string& user_input) {
 
 
 std::set<std::string> matched_commands_set;
-std::string longest_common_prefix_string() {
-  if(matched_commands_set.size() == 0) {
+std::string longest_common_prefix_string(const std::set<std::string>& set) {
+  if(set.size() == 0) {
     return "";
   }
   //for a sorted set of strings
   //the lcp string is the lcp of the first and last strings in the set
-  std::string first = *(matched_commands_set.begin());
-  std::string last = *(matched_commands_set.rbegin());
+  std::string first = *(set.begin());
+  std::string last = *(set.rbegin());
 
   size_t i = 0;
   while(true) {
@@ -356,7 +356,7 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
    //extend suggestion to LCP. then on next tab display all the options
 
     //dont need to send matched_commands_list as parameter because it is a global variable
-    std::string lcp = longest_common_prefix_string();
+    std::string lcp = longest_common_prefix_string(matched_commands_set);
     if(lcp.size() > user_input.size()) {
       user_input = lcp;
       std::cout << "\r$ " << user_input << std::flush; //dont add space, because LCP string may not be a suggestion
@@ -393,8 +393,6 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
   // the child process triggered with completer_script, whatever it writes onto its std out stream
   // we can read from it only.. with "w" we could write to child's input stream and drive it through
   // a series of commands.
-
-
   std::string point_str = std::to_string(user_input.size());
   setenv("COMP_LINE", user_input.c_str(), 1);
   setenv("COMP_POINT", point_str.c_str(), 1);
@@ -416,7 +414,8 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
   return completer_script_results;
 }
 
-void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& parsed_command, const std::string& user_input, bool& consecutive_completer_tab) {
+
+void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& parsed_command, std::string& user_input, bool& consecutive_completer_tab) {
 
   if(candidates.size() == 1) {
     //move cursor behind. So we can override the half completed argument
@@ -431,7 +430,19 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
     std::cout << *candidates.begin() << " " << std::flush;
   }else if(candidates.size() > 1) {
     if(!consecutive_completer_tab) {
-      std::cout << "\a" << std::flush;
+      std::string lcp = longest_common_prefix_string(candidates);
+      if(lcp.size() > parsed_command.args.back().size()) {
+        int delSize = parsed_command.args.back().size();
+        for(int i = 0; i < delSize; i++) {
+          std::cout << "\b";
+          user_input.pop_back();
+        }
+        user_input += lcp;
+        parsed_command.args[parsed_command.args.size() - 1] = lcp;
+        std::cout << lcp << std::flush;
+      }else {
+        std::cout << "\a" << std::flush;
+      }  
     }else {
       std::cout << std::endl;
       for(const std::string& candidate : candidates) {
@@ -444,6 +455,8 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
   }
   return;
 }
+
+
 std::string register_keystrokes_for_command() {
   std::string user_input;
   char ch;
