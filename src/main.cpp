@@ -415,6 +415,8 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
 }
 
 void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& parsed_command, const std::string& user_input, bool& consecutive_completer_tab) {
+  std::cout << std::endl << "CANDIDATES SIZE: " << candidates.size() << std::endl;
+
   if(candidates.size() == 1) {
     //move cursor behind. So we can override the half completed argument
     //with completer script reply stored in candidates set
@@ -427,7 +429,6 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
     //write
     std::cout << *candidates.begin() << " " << std::flush;
   }else if(candidates.size() > 1) {
-    std::cout << std::endl << "CANDIDATES SIZE: " << candidates.size() << std::endl;
     if(!consecutive_completer_tab) {
       std::cout << "\a" << std::flush;
     }else {
