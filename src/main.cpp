@@ -152,6 +152,17 @@ void handle_type(const ParsedCommand& parsed_command) {
   }
 }
 
+void handle_complete(const ParsedCommand& parsed_command) {
+  std::vector<std::string> args = parsed_command.args;
+  if(args.size() == 0) {
+    return;
+  }
+  auto it = std::find(args.begin(), args.end(), "-p");
+  size_t idx = it - args.begin();
+  if(idx >= 0 && idx < args.size() - 1) {
+    std::cout << "complete: " << args[idx + 1] << ": no completion specification" << std::endl;
+  }
+}
 void handle_external(const ParsedCommand& parsed_command, const std::string& user_input) {
   std::string exec_path = find_executable_path(parsed_command.command);
   if(exec_path.empty()) {
@@ -164,7 +175,8 @@ void handle_external(const ParsedCommand& parsed_command, const std::string& use
 
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"echo", handle_echo},
-  {"type", handle_type}
+  {"type", handle_type},
+  {"complete", handle_complete}
 };
 
 void adjust_out_stream(ParsedCommand& parsed_command) {
