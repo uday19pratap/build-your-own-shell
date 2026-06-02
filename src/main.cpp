@@ -183,6 +183,19 @@ void handle_complete(const ParsedCommand& parsed_command) {
     completeMap[keyCommand] = valuePath;
     return;
   }
+
+  //support for -r option of complete command
+  //remove the registration of a certain command
+  it = std::find(args.begin(), args.end(), "-r");
+  idx = it - args.begin();
+  if(idx < args.size() - 1) {
+    std::string keyCommand = *(it + 1);
+    size_t n_commands_deregisterd = completeMap.erase(keyCommand);
+    if(n_commands_deregisterd == 0) {
+      std::cout << "complete: " << keyCommand << ": no completion specification to de-register" << std::endl;
+    }
+    return;
+  }
 }
 void handle_external(const ParsedCommand& parsed_command, const std::string& user_input) {
   std::string exec_path = find_executable_path(parsed_command.command);
