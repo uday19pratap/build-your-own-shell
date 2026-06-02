@@ -411,8 +411,8 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
     completer_script_results.insert(line);
   }
   pclose(pipe);
-  setenv("COMP_LINE", old_COMP_LINE, 1);
-  setenv("COMP_POINT", old_COMP_POINT, 1);
+  //setenv("COMP_LINE", old_COMP_LINE, 1);
+  //setenv("COMP_POINT", old_COMP_POINT, 1);
   return completer_script_results;
 }
 
