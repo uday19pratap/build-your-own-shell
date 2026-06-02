@@ -391,14 +391,10 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
   // the child process triggered with completer_script, whatever it writes onto its std out stream
   // we can read from it only.. with "w" we could write to child's input stream and drive it through
   // a series of commands.
-  char* old_COMP_LINE = std::getenv("COMP_LINE");
-  char* old_COMP_POINT = std::getenv("COMP_POINT");
+
 
   std::string point_str = std::to_string(user_input.size());
-  std::cout << "COMP_LINE: " << user_input << std::endl;
-  std::cout << "COMP_POINT: " << point_str << std::endl;
-  setenv("COMP_LINE", user_input.c_str(), 1);
-  setenv("COMP_POINT", point_str.c_str(), 1);
+
   FILE* pipe = popen(exec.c_str(), "r");
   char buffer[256];
   while(fgets(buffer, sizeof(buffer), pipe)) {
@@ -411,8 +407,8 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
     completer_script_results.insert(line);
   }
   pclose(pipe);
-  //setenv("COMP_LINE", old_COMP_LINE, 1);
-  //setenv("COMP_POINT", old_COMP_POINT, 1);
+  unsetenv("COMP_LINE");
+  unsetenv("COMP_POINT");
   return completer_script_results;
 }
 
