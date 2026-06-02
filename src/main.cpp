@@ -394,6 +394,8 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
 
 
   std::string point_str = std::to_string(user_input.size());
+  setenv("COMP_LINE", user_input.c_str(), 1);
+  setenv("COMP_POINT", point_str.c_str(), 1);
 
   FILE* pipe = popen(exec.c_str(), "r");
   char buffer[256];
