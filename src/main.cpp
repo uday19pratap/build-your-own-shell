@@ -386,7 +386,7 @@ bool tryCompleterScripts(std::string user_input) {
   }
   const char* completer_script = (it->second).c_str();
   std::system(completer_script);
-  std::cout << " ";
+  std::cout << " abc";
   return true;
 }
 std::string register_keystrokes_for_command() {
