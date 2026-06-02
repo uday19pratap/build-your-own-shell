@@ -465,7 +465,7 @@ std::string register_keystrokes_for_command() {
       ParsedCommand parsed_command = parse_command(user_input);
       if(!completer_consecutive_tab) {
         candidates = run_completer_script(parsed_command, user_input);
-        std::cout << std::endl << "CANDIDATES SIZE: " << candidates.size() << std::endl;
+        //std::cout << std::endl << "CANDIDATES SIZE: " << candidates.size() << std::endl;
       }
       completer_auto_complete(candidates, parsed_command, user_input, completer_consecutive_tab);
       if(candidates.size() == 0) {
