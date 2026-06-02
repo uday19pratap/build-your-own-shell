@@ -382,13 +382,16 @@ std::set<std::string> run_completer_script(std::string user_input) {
     return completer_script_results;
   }
   const char* completer_script = (it->second).c_str();
+  std::cout << "Adding command: " << parsed_command.command << std::endl;
   std::string exec = (it->second) + " " + parsed_command.command;
   const std::vector<std::string>& args = parsed_command.args;
   if(args.size() > 0) {
     exec += args.back();
+    std::cout << "word being completed: " << args.back() << std::endl;
   }
   if(args.size() > 1) {
     exec += args[args.size() - 2];
+    std::cout << "preceeding word: " << args[args.size() - 2] << std::endl;
   }
   // "r" mode makes sure you can only read from the pipe
   // the child process triggered with completer_script, whatever it writes onto its std out stream
