@@ -418,9 +418,8 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
   if(candidates.size() == 1) {
     //move cursor behind. So we can override the half completed argument
     //with completer script reply stored in candidates set
-    if(parsed_command.args.size() > 0) {
+    if(parsed_command.args.back().size() > 0) {
       int delSize = parsed_command.args.size();
-      std::cout << std::endl << "delSize: " << delSize << std::endl;
       for(int i = 0; i < delSize; i++) {
         std::cout << "\b";
       }
