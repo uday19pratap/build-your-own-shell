@@ -426,8 +426,6 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
     }
     //write
     std::cout << *candidates.begin() << " " << std::flush;
-    std::cout << std::endl << "CANDIDATE: " << *candidates.begin() << " " << std::flush;
-
   }
   return;
 }
