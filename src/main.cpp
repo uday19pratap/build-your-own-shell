@@ -176,7 +176,7 @@ void handle_complete(const ParsedCommand& parsed_command) {
   // support for -C option of complete command
   it = std::find(args.begin(), args.end(), "-C");
   idx = it - args.begin();
-  if(idx < args.size() - 2 && access((*(it + 1)).c_str(), X_OK) == 0) {
+  if(idx < args.size() - 2 /*&& access((*(it + 1)).c_str(), X_OK) == 0*/) {
     std::string keyCommand = *(it + 2);
     std::string valuePath = *(it + 1);
     completeMap[keyCommand] = valuePath;
