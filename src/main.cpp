@@ -416,7 +416,6 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
 
 void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& parsed_command) {
   if(candidates.size() == 1) {
-
     //move cursor behind. So we can override the half completed argument
     //with completer script reply stored in candidates set
     if(parsed_command.args.size() > 0) {
@@ -427,6 +426,8 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
     }
     //write
     std::cout << *candidates.begin() << " " << std::flush;
+    std::cout << std::endl << "CANDIDATE: " << *candidates.begin() << " " << std::flush;
+
   }
   return;
 }
