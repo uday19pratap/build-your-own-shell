@@ -152,15 +152,32 @@ void handle_type(const ParsedCommand& parsed_command) {
   }
 }
 
+
+// command -->exec script for command
+std::unordered_map<std::string, std::string> completeMap;
 void handle_complete(const ParsedCommand& parsed_command) {
   std::vector<std::string> args = parsed_command.args;
   if(args.size() == 0) {
     return;
   }
+
+  //support for -p option of complete command
   auto it = std::find(args.begin(), args.end(), "-p");
   size_t idx = it - args.begin();
-  if(idx >= 0 && idx < args.size() - 1) {
-    std::cout << "complete: " << args[idx + 1] << ": no completion specification" << std::endl;
+  if(idx < args.size() - 1) {
+    auto it = completeMap.find(args[idx + 1]);
+    if(it == completeMap.end()) {
+      std::cout << "complete: " << it->first << ": no completion specification" << std::endl;
+    }else {
+      std::cout << "complete -C '" << it->second << "' " << it->first << std::endl;
+    }
+  }
+
+  // support for -C option of complete command
+  it = std::find(args.begin(), args.end(), "-C");
+  size_t idx = it - args.begin();
+  if(idx < args.size() - 2) {
+    completeMap[*(it + 2)] = *(it + 1);
   }
 }
 void handle_external(const ParsedCommand& parsed_command, const std::string& user_input) {
