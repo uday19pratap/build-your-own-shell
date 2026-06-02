@@ -374,18 +374,22 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
 
 std::set<std::string> run_completer_script(std::string user_input) {
   std::set<std::string> completer_script_results;
-  if(user_input.back() != ' ') {
-    //user should give command, space and tab for completer scripts to run
-    return completer_script_results;
-  }
-  while(user_input.back() == ' ') {
-    user_input.pop_back();
-  }
-  auto it = completeMap.find(user_input);
+
+  ParsedCommand parsed_command = parse_command(user_input);
+
+  auto it = completeMap.find(parsed_command.command);
   if(it == completeMap.end()) {
     return completer_script_results;
   }
   const char* completer_script = (it->second).c_str();
+  std::string exec = (it->second) + " " + parsed_command.command;
+  const std::vector<std::string>& args = parsed_command.args;
+  if(args.size() > 0) {
+    exec += args.back();
+  }
+  if(args.size() > 1) {
+    exec += args[args.size() - 2];
+  }
   // "r" mode makes sure you can only read from the pipe
   // the child process triggered with completer_script, whatever it writes onto its std out stream
   // we can read from it only.. with "w" we could write to child's input stream and drive it through
