@@ -414,7 +414,7 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
   return completer_script_results;
 }
 
-void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& parsed_command) {
+void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& parsed_command, const std::string& user_input, bool& consecutive_completer_tab) {
   if(candidates.size() == 1) {
     //move cursor behind. So we can override the half completed argument
     //with completer script reply stored in candidates set
@@ -426,6 +426,18 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
     }
     //write
     std::cout << *candidates.begin() << " " << std::flush;
+  }else if(candidates.size() > 1) {
+    if(!consecutive_completer_tab) {
+      std::cout << "\a" << std::flush;
+    }else {
+      std::cout << std::endl;
+      for(const std::string& candidate : candidates) {
+        std::cout << candidate << "  ";
+      }
+      std::cout << std::endl;
+      std::cout << "$ " << user_input << std::flush;
+    }
+    consecutive_completer_tab = !consecutive_completer_tab;
   }
   return;
 }
@@ -433,11 +445,16 @@ std::string register_keystrokes_for_command() {
   std::string user_input;
   char ch;
   bool second_consecutive_tab = false;
+
+  std::set<std::string> candidates;
+  bool completer_consecutive_tab = false;
   while(true) {
     read(STDIN_FILENO, &ch, 1);
     if(ch != '\t') {
       matched_commands_set.clear();
       second_consecutive_tab = false;
+      candidates.clear();
+      completer_consecutive_tab = false;
     }
 
     if(ch == '\n') { //for newline
@@ -445,8 +462,10 @@ std::string register_keystrokes_for_command() {
       break;
     }else if (ch == '\t') { //for tab...auto completion
       ParsedCommand parsed_command = parse_command(user_input);
-      std::set<std::string> candidates = run_completer_script(parsed_command, user_input);
-      completer_auto_complete(candidates, parsed_command);
+      if(!completer_consecutive_tab) {
+        candidates = run_completer_script(parsed_command, user_input);
+      }
+      completer_auto_complete(candidates, parsed_command, user_input, completer_consecutive_tab);
       //std::cout << "CANDIDATES: " << candidates.size() << std::endl;
       if(candidates.size() == 0) {
         bool second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
