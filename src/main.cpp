@@ -372,25 +372,33 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
   }
 }
 
-std::set<std::string> run_completer_script(const ParsedCommand& parsed_command) {
+std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, const std::string& user_input) {
   std::set<std::string> completer_script_results;
   auto it = completeMap.find(parsed_command.command);
   if(it == completeMap.end()) {
     return completer_script_results;
   }
   const char* completer_script = (it->second).c_str();
-  std::string exec = (it->second) + " " + parsed_command.command;
+  std::string exec = (it->second) + " " + parsed_command.command; //argv[0] --> command
   const std::vector<std::string>& args = parsed_command.args;
   if(args.size() > 0) {
-    exec += " " + args.back() + " ";
+    exec += " " + args.back() + " ";  //argv[1] --> word being completed
   }
   if(args.size() > 1) {
-    exec += args[args.size() - 2];
+    exec += args[args.size() - 2]; //argv[2] --> preceeding word being completed
   }
   // "r" mode makes sure you can only read from the pipe
   // the child process triggered with completer_script, whatever it writes onto its std out stream
   // we can read from it only.. with "w" we could write to child's input stream and drive it through
   // a series of commands.
+  char* old_COMP_LINE = std::getenv("COMP_LINE");
+  char* old_COMP_POINT = std::getenv("COMP_POINT");
+  char ch = char(user_input.size() + '0');
+  char str[2];
+  str[0] = ch;
+  str[1] = '\0';
+  setenv("COMP_LINE", user_input.c_str(), 1);
+  setenv("COMP_POINT", str, 1);
   FILE* pipe = popen(exec.c_str(), "r");
   char buffer[256];
   while(fgets(buffer, sizeof(buffer), pipe)) {
@@ -403,6 +411,8 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command) 
     completer_script_results.insert(line);
   }
   pclose(pipe);
+  setenv("COMP_LINE", old_COMP_LINE, 1);
+  setenv("COMP_POINT", old_COMP_POINT, 1);
   return completer_script_results;
 }
 
@@ -438,7 +448,7 @@ std::string register_keystrokes_for_command() {
       break;
     }else if (ch == '\t') { //for tab...auto completion
       ParsedCommand parsed_command = parse_command(user_input);
-      std::set<std::string> candidates = run_completer_script(parsed_command);
+      std::set<std::string> candidates = run_completer_script(parsed_command, user_input);
       completer_auto_complete(candidates, parsed_command);
       //std::cout << "CANDIDATES: " << candidates.size() << std::endl;
       if(candidates.size() == 0) {
