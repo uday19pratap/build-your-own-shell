@@ -171,6 +171,7 @@ void handle_complete(const ParsedCommand& parsed_command) {
     }else {
       std::cout << "complete -C '" << it->second << "' " << it->first << std::endl;
     }
+    return;
   }
 
   // support for -C option of complete command
@@ -180,6 +181,7 @@ void handle_complete(const ParsedCommand& parsed_command) {
     std::string keyCommand = *(it + 2);
     std::string valuePath = *(it + 1);
     completeMap[keyCommand] = valuePath;
+    return;
   }
 }
 void handle_external(const ParsedCommand& parsed_command, const std::string& user_input) {
