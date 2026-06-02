@@ -372,22 +372,44 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
   }
 }
 
-bool tryCompleterScripts(std::string user_input) {
+std::set<std::string> run_completer_script(std::string user_input) {
+  std::set<std::string> completer_script_results;
   if(user_input.back() != ' ') {
     //user should give command, space and tab for completer scripts to run
-    return false;
+    return completer_script_results;
   }
   while(user_input.back() == ' ') {
     user_input.pop_back();
   }
   auto it = completeMap.find(user_input);
   if(it == completeMap.end()) {
-    return false;
+    return completer_script_results;
   }
   const char* completer_script = (it->second).c_str();
-  std::system(completer_script);
-  std::cout << " abc";
-  return true;
+  // "r" mode makes sure you can only read from the pipe
+  // the child process triggered with completer_script, whatever it writes onto its std out stream
+  // we can read from it only.. with "w" we could write to child's input stream and drive it through
+  // a series of commands.
+  FILE* pipe = popen(completer_script, "r");
+  char buffer[256];
+  while(fgets(buffer, sizeof(buffer), pipe)) {
+    std::string line = buffer;
+    if(line.empty()) continue;
+    if(line.back() == '\n') {
+      line.pop_back();
+    }
+    if(line.empty()) continue;
+    completer_script_results.insert(line);
+  }
+  pclose(pipe);
+  return completer_script_results;
+}
+
+void completer_auto_complete(std::set<std::string>& candidates) {
+  if(candidates.size() == 1) {
+    std::cout << *candidates.begin() << std::flush;
+  }
+  return;
 }
 std::string register_keystrokes_for_command() {
   std::string user_input;
@@ -404,8 +426,10 @@ std::string register_keystrokes_for_command() {
       std::cout << std::endl << std::flush;
       break;
     }else if (ch == '\t') { //for tab...auto completion
-      bool success = tryCompleterScripts(user_input);
-      if(!success) {
+      std::set<std::string> candidates = run_completer_script(user_input);
+      completer_auto_complete(candidates);
+      //std::cout << "CANDIDATES: " << candidates.size() << std::endl;
+      if(candidates.size() == 0) {
         bool second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
       }
     }else if(ch == 8 || ch == 127) { //for backspace/delete
