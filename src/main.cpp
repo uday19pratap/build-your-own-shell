@@ -407,7 +407,7 @@ std::set<std::string> run_completer_script(std::string user_input) {
 
 void completer_auto_complete(std::set<std::string>& candidates) {
   if(candidates.size() == 1) {
-    std::cout << *candidates.begin() << std::flush;
+    std::cout << *candidates.begin() << " " << std::flush;
   }
   return;
 }
