@@ -372,6 +372,22 @@ bool auto_completion_handler(std::string& user_input, bool second_consecutive_ta
   }
 }
 
+bool tryCompleterScripts(std::string user_input) {
+  if(user_input.back() != ' ') {
+    //user should give command, space and tab for completer scripts to run
+    return false;
+  }
+  while(user_input.back() == ' ') {
+    user_input.pop_back();
+  }
+  auto it = completeMap.find(user_input);
+  if(it == completeMap.end()) {
+    return false;
+  }
+  const char* completer_script = (it->second).c_str();
+  std::system(completer_script); 
+  return true;
+}
 std::string register_keystrokes_for_command() {
   std::string user_input;
   char ch;
@@ -387,7 +403,10 @@ std::string register_keystrokes_for_command() {
       std::cout << std::endl << std::flush;
       break;
     }else if (ch == '\t') { //for tab...auto completion
-      bool second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
+      bool success = tryCompleterScripts(user_input);
+      if(!success) {
+        bool second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
+      }
     }else if(ch == 8 || ch == 127) { //for backspace/delete
       if(user_input.size() > 0) {
         user_input.pop_back();
