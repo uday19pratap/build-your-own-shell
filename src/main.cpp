@@ -427,6 +427,7 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
     //write
     std::cout << *candidates.begin() << " " << std::flush;
   }else if(candidates.size() > 1) {
+    std::cout << std::endl << "CANDIDATES SIZE: " << candidates.size() << std::endl;
     if(!consecutive_completer_tab) {
       std::cout << "\a" << std::flush;
     }else {
