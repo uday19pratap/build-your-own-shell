@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <map>
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
@@ -21,6 +22,7 @@ const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit
 struct ParsedCommand {
   std::string command;
   std::vector<std::string> args;
+  std::string user_input;
 };
 
 std::unordered_set<char> special_characters_in_double_quotes_set = {'\\', '$', '`', '\n', '"'};
@@ -102,6 +104,7 @@ ParsedCommand parse_command(const std::string& user_input) {
   for(int i = 1; i < tokens.size(); i++) {
     parsed.args.push_back(tokens[i]);
   }
+  parsed.user_input = user_input;
   return parsed;
 }
 
@@ -152,6 +155,14 @@ void handle_type(const ParsedCommand& parsed_command) {
   }
 }
 // command -->exec script for command
+
+struct Job {
+  int id;
+  pid_t pid;
+  std::string command;
+  char status[24] = "Running                ";
+  // 24 spaces for padding
+};
 std::unordered_map<std::string, std::string> completeMap;
 void handle_complete(const ParsedCommand& parsed_command) {
   std::vector<std::string> args = parsed_command.args;
@@ -195,8 +206,16 @@ void handle_complete(const ParsedCommand& parsed_command) {
     return;
   }
 }
-void handle_jobs(const ParsedCommand& parsed_command) {
 
+std::map<int, Job> jobid_to_job_map;
+int next_job_number = 1;
+void handle_jobs(const ParsedCommand& parsed_command) {
+  for(const auto& [id, job] : jobid_to_job_map) {
+
+    //the most recent job will have rbegin and is to be displayed with '+'
+    char marker = ((id + 1) == next_job_number) ? '+' : '-';
+    std::cout << "[" << job.id << "]" << marker << "  " << job.status << job.command << std::endl;
+  }
 }
 
 std::vector<char*> create_argv_vector_for_fork(ParsedCommand& parsed_command) {
@@ -211,7 +230,6 @@ std::vector<char*> create_argv_vector_for_fork(ParsedCommand& parsed_command) {
   argv.push_back(nullptr);
   return argv;
 }
-int next_job_number = 1;
 void handle_external(ParsedCommand& parsed_command, const std::string& user_input, bool is_bg) {
   std::string exec_path = find_executable_path(parsed_command.command);
   if(exec_path.empty()) {
@@ -227,6 +245,8 @@ void handle_external(ParsedCommand& parsed_command, const std::string& user_inpu
       execv(exec_path.c_str(), argv.data());
     }else {
       std::cout << "[" << next_job_number << "] " << ppid << std::endl;
+      Job bg_job = {next_job_number, ppid, parsed_command.user_input};
+      jobid_to_job_map[next_job_number] = bg_job;
       next_job_number++;
     }
   }
