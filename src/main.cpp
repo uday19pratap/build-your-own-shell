@@ -199,20 +199,20 @@ void handle_jobs(const ParsedCommand& parsed_command) {
 
 }
 
-std::vector<char*> create_argv_vector_for_fork(const ParsedCommand& parsed_command) {
+std::vector<char*> create_argv_vector_for_fork(ParsedCommand& parsed_command) {
   std::vector<char*> argv;
 
-  std::string cmd = parsed_command.command;
-  std::vector<std::string> args = parsed_command.args;
+  std::string& cmd = parsed_command.command;
+  std::vector<std::string>& args = parsed_command.args;
   argv.push_back(cmd.data());
-  for(std::string arg : args) {
+  for(std::string& arg : args) {
     argv.push_back(arg.data());
   }
   argv.push_back(nullptr);
   return argv;
 }
 int next_job_number = 1;
-void handle_external(const ParsedCommand& parsed_command, const std::string& user_input, bool is_bg) {
+void handle_external(ParsedCommand& parsed_command, const std::string& user_input, bool is_bg) {
   std::string exec_path = find_executable_path(parsed_command.command);
   if(exec_path.empty()) {
     std::cout << parsed_command.command << ": command not found" << std::endl;
@@ -226,7 +226,7 @@ void handle_external(const ParsedCommand& parsed_command, const std::string& use
     if(ppid == 0) {
       execv(exec_path.c_str(), argv.data());
     }else {
-      std::cout << "[" << next_job_number << "] " << ppid;
+      std::cout << "[" << next_job_number << "] " << ppid << std::endl;
       next_job_number++;
     }
   }
