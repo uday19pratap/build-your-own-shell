@@ -195,6 +195,9 @@ void handle_complete(const ParsedCommand& parsed_command) {
     return;
   }
 }
+void handle_jobs(const ParsedCommand& parsed_command) {
+
+}
 void handle_external(const ParsedCommand& parsed_command, const std::string& user_input) {
   std::string exec_path = find_executable_path(parsed_command.command);
   if(exec_path.empty()) {
@@ -208,7 +211,8 @@ void handle_external(const ParsedCommand& parsed_command, const std::string& use
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"echo", handle_echo},
   {"type", handle_type},
-  {"complete", handle_complete}
+  {"complete", handle_complete},
+  {"jobs", handle_jobs}
 };
 
 void adjust_out_stream(ParsedCommand& parsed_command) {
