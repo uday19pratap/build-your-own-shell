@@ -210,8 +210,11 @@ struct Job {
   char status[24] = "Running                ";
   // 24 spaces for padding
 };
+
+using minHeap = std::priority_queue<int, std::vector<int>, std::greater<int>>;
+minHeap available_slots;
+
 std::map<int, Job> jobid_to_job_map;
-int next_job_number = 1;
 
 bool is_job_done(Job& job) {
   int status;
@@ -226,6 +229,23 @@ bool is_job_done(Job& job) {
     return true;
   }
   return false;
+}
+
+int get_next_available_jobid() {
+
+  //empty table... job can be created with id = 1
+  int sz = jobid_to_job_map.size();
+  if(sz == 0) {
+    return 1;
+  }
+  if(sz == jobid_to_job_map.rbegin()->first) {
+    available_slots = minHeap(); //clear the minHeap map
+    return sz + 1;
+  }
+  int retVal = available_slots.top();
+  available_slots.pop();
+  return retVal;
+
 }
 void handle_jobs(const ParsedCommand& parsed_command) {
 
@@ -253,6 +273,8 @@ void handle_jobs(const ParsedCommand& parsed_command) {
   //delete done processes from process table
   for(int reap_id : reap_ids) {
     jobid_to_job_map.erase(reap_id);
+    //add to available slots
+    available_slots.push(reap_id);
   }
 }
 
@@ -282,10 +304,10 @@ void handle_external(ParsedCommand& parsed_command, const std::string& user_inpu
     if(ppid == 0) {
       execv(exec_path.c_str(), argv.data());
     }else {
-      std::cout << "[" << next_job_number << "] " << ppid << std::endl;
-      Job bg_job = {next_job_number, ppid, parsed_command.user_input};
-      jobid_to_job_map[next_job_number] = bg_job;
-      next_job_number++;
+      int id = get_next_available_jobid();
+      std::cout << "[" << id << "] " << ppid << std::endl;
+      Job bg_job = {id, ppid, parsed_command.user_input};
+      jobid_to_job_map[id] = bg_job;
     }
   }
 }
@@ -633,6 +655,8 @@ void reap_all_bg_jobs() {
       }
       std::strcpy(job.status, "Done                   ");
       std::cout << "[" << job.id << "]" << marker << "  " << job.status << job.command << std::endl;
+      //add to available slots
+      available_slots.push(job.id);
       it = jobid_to_job_map.erase(it);
     }else {
       it++;
