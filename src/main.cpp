@@ -16,7 +16,7 @@ constexpr char PATH_LIST_SEPARATOR = ';';
 #else
 constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
-const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete"};
+const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs"};
 
 struct ParsedCommand {
   std::string command;
@@ -151,8 +151,6 @@ void handle_type(const ParsedCommand& parsed_command) {
     }
   }
 }
-
-
 // command -->exec script for command
 std::unordered_map<std::string, std::string> completeMap;
 void handle_complete(const ParsedCommand& parsed_command) {
