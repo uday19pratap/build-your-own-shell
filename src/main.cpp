@@ -232,19 +232,23 @@ void handle_jobs(const ParsedCommand& parsed_command) {
 
   //list bg processes
   std::vector<int> reap_ids;
+
+  int total_bg_jobs = jobid_to_job_map.size();
+  int idx = 0;
   for(auto& [id, job] : jobid_to_job_map) {
     if(is_job_done(job)) {
       reap_ids.push_back(id);
     }
     // most recent bg jobs --> + ; second most recent --> - ; others --> ' '
     char marker = ' ';
-    int diff = next_job_number - id;
+    int diff = total_bg_jobs - idx;
     switch(diff) {
       case 1 : {marker = '+';} break;
       case 2 : {marker = '-';} break;
       default: {marker = ' ';} break;
     }
     std::cout << "[" << job.id << "]" << marker << "  " << job.status << job.command << std::endl;
+    idx++;
   }
 
   //delete done processes from process table
