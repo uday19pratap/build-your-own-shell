@@ -297,13 +297,26 @@ void handle_external(ParsedCommand& parsed_command, const std::string& user_inpu
     std::cout << parsed_command.command << ": command not found" << std::endl;
     return;
   }
+
+
   if(!is_bg) {
-    std::system(user_input.c_str());
+    std::vector<char*> argv = create_argv_vector_for_fork(parsed_command);
+    pid_t ppid = fork();
+    if(ppid == 0) {
+      execv(exec_path.c_str(), argv.data());
+      perror("execv");
+      exit(1);
+    }else {
+      int status;
+      waitpid(ppid, &status, 0);
+    }
   }else {
     std::vector<char*> argv = create_argv_vector_for_fork(parsed_command);
     pid_t ppid = fork();
     if(ppid == 0) {
       execv(exec_path.c_str(), argv.data());
+      perror("execv");
+      exit(1);
     }else {
       int id = get_next_available_jobid();
       std::cout << "[" << id << "] " << ppid << std::endl;
