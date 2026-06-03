@@ -620,7 +620,9 @@ void set_raw_terminal_mode_for_keystrokes() {
 void reap_all_bg_jobs() {
 
   int total_bg_jobs = jobid_to_job_map.size();
-  std::cout << "Total jobs: " << total_bg_jobs << std::endl;
+  if(total_bg_jobs > 0) {
+    std::cout << "Total jobs: " << total_bg_jobs << std::endl;
+  }
   int idx = 0;
   for(auto it = jobid_to_job_map.begin(); it != jobid_to_job_map.end();) {
     Job job = (it->second);
