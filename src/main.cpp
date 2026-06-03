@@ -619,14 +619,11 @@ void set_raw_terminal_mode_for_keystrokes() {
 void reap_all_bg_jobs() {
 
   int total_bg_jobs = jobid_to_job_map.size();
-  if(total_bg_jobs > 0) {
-    //std::cout << "Total jobs: " << total_bg_jobs << std::endl;
-  }
+
   int idx = 0;
   for(auto it = jobid_to_job_map.begin(); it != jobid_to_job_map.end();) {
     Job job = (it->second);
     if(is_job_done(job)) {
-      //std::cout << "JOB DONE : " << job.id << " " << job.pid << std::endl;
       char marker = ' ';
       int diff = total_bg_jobs - idx;
       switch(diff) {
