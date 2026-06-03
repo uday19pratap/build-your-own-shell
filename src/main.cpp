@@ -298,7 +298,6 @@ void handle_external(ParsedCommand& parsed_command, const std::string& user_inpu
     return;
   }
 
-
   if(!is_bg) {
     std::vector<char*> argv = create_argv_vector_for_fork(parsed_command);
     pid_t ppid = fork();
