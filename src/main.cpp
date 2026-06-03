@@ -156,13 +156,7 @@ void handle_type(const ParsedCommand& parsed_command) {
 }
 // command -->exec script for command
 
-struct Job {
-  int id;
-  pid_t pid;
-  std::string command;
-  char status[24] = "Running                ";
-  // 24 spaces for padding
-};
+
 std::unordered_map<std::string, std::string> completeMap;
 void handle_complete(const ParsedCommand& parsed_command) {
   std::vector<std::string> args = parsed_command.args;
@@ -207,10 +201,39 @@ void handle_complete(const ParsedCommand& parsed_command) {
   }
 }
 
+struct Job {
+  int id;
+  pid_t pid;
+  std::string command;
+  char status[24] = "Running                ";
+  // 24 spaces for padding
+};
 std::map<int, Job> jobid_to_job_map;
 int next_job_number = 1;
+
+bool is_job_done(Job& job) {
+  pid_t pid = job.pid;
+  int status;
+  pid_t ret = waitpid(job.pid, &status, WNOHANG);
+  
+  if(WIFEXITED(status)) {
+    std::strcpy(job.status, "Done                   ");
+    while(job.command.back() != '&') {
+      job.command.pop_back();
+    }
+    job.command.pop_back();
+    return true;
+  }
+  return false;
+}
 void handle_jobs(const ParsedCommand& parsed_command) {
-  for(const auto& [id, job] : jobid_to_job_map) {
+
+  //list bg processes
+  std::vector<int> reap_ids;
+  for(auto& [id, job] : jobid_to_job_map) {
+    if(is_job_done(job)) {
+      reap_ids.push_back(id);
+    }
     // most recent bg jobs --> + ; second most recent --> - ; others --> ' '
     char marker = ' ';
     int diff = next_job_number - id;
@@ -220,6 +243,11 @@ void handle_jobs(const ParsedCommand& parsed_command) {
       default: {marker = ' ';} break;
     }
     std::cout << "[" << job.id << "]" << marker << "  " << job.status << job.command << std::endl;
+  }
+
+  //delete done processes from process table
+  for(int reap_id : reap_ids) {
+    jobid_to_job_map.erase(reap_id);
   }
 }
 
