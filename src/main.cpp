@@ -211,9 +211,14 @@ std::map<int, Job> jobid_to_job_map;
 int next_job_number = 1;
 void handle_jobs(const ParsedCommand& parsed_command) {
   for(const auto& [id, job] : jobid_to_job_map) {
-
-    //the most recent job will have rbegin and is to be displayed with '+'
-    char marker = ((id + 1) == next_job_number) ? '+' : '-';
+    // most recent bg jobs --> + ; second most recent --> - ; others --> ' '
+    char marker = ' ';
+    int diff = next_job_number - id;
+    switch(diff) {
+      case 1 : {marker = '+';} break;
+      case 2 : {marker = '-';} break;
+      default: {marker = ' ';} break;
+    }
     std::cout << "[" << job.id << "]" << marker << "  " << job.status << job.command << std::endl;
   }
 }
