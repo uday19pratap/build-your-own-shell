@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include<cstring>
+#include<sys/wait.h>
 #include <sstream>
 #include <map>
 #include <unordered_map>
