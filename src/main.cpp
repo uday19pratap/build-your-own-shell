@@ -214,9 +214,9 @@ int next_job_number = 1;
 bool is_job_done(Job& job) {
   pid_t pid = job.pid;
   int status;
-  pid_t ret = waitpid(job.pid, nullptr, WNOHANG);
+  pid_t ret = waitpid(job.pid, &status, WNOHANG);
   
-  if(ret != 0) {
+  if(WIFEXITED(status)) {
     std::strcpy(job.status, "Done                   ");
     while(job.command.back() != '&') {
       job.command.pop_back();
