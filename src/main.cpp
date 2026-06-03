@@ -271,7 +271,11 @@ void adjust_out_stream(ParsedCommand& parsed_command) {
 }
 
 bool is_bg_job(ParsedCommand& parsed_command) {
-  if(parsed_command.args.back() == "&") {
+  std::vector<std::string>& args = parsed_command.args;
+  if(args.size() < 1) {
+    return false;
+  }
+  if(args.back() == "&") {
     parsed_command.args.pop_back();
     return true;
   }
