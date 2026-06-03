@@ -617,6 +617,29 @@ void set_raw_terminal_mode_for_keystrokes() {
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
 
+void reap_all_bg_jobs() {
+
+  int total_bg_jobs = jobid_to_job_map.size();
+  int idx = 0;
+  for(auto it = jobid_to_job_map.begin(); it != jobid_to_job_map.end();) {
+    Job job = (it->second);
+    if(is_job_done(job)) {
+      char marker = ' ';
+      int diff = total_bg_jobs - idx;
+      switch(diff) {
+        case 1 : {marker = '+';} break;
+        case 2 : {marker = '-';} break;
+        default: {marker = ' ';} break;
+      }
+      std::strcpy(job.status, "Done                   ");
+      std::cout << "[" << job.id << "]" << marker << "  " << job.status << job.command << std::endl;
+      it = jobid_to_job_map.erase(it);
+    }else {
+      it++;
+    }
+    idx++;
+  }
+}
 int main() {
   // Flush after every std::cout / std:cerr
   std::cout << std::unitbuf;
@@ -624,6 +647,8 @@ int main() {
 
   set_raw_terminal_mode_for_keystrokes();
   while(true) {
+
+    reap_all_bg_jobs();
     std::cout << "$ ";
     std::string user_input = register_keystrokes_for_command();
     if(user_input.empty()) {
