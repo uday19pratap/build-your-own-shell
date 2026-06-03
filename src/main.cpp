@@ -198,14 +198,38 @@ void handle_complete(const ParsedCommand& parsed_command) {
 void handle_jobs(const ParsedCommand& parsed_command) {
 
 }
-void handle_external(const ParsedCommand& parsed_command, const std::string& user_input) {
+
+std::vector<char*> create_argv_vector_for_fork(const ParsedCommand& parsed_command) {
+  std::vector<char*> argv;
+
+  std::string cmd = parsed_command.command;
+  std::vector<std::string> args = parsed_command.args;
+  argv.push_back(cmd.data());
+  for(std::string arg : args) {
+    argv.push_back(arg.data());
+  }
+  argv.push_back(nullptr);
+  return argv;
+}
+int next_job_number = 1;
+void handle_external(const ParsedCommand& parsed_command, const std::string& user_input, bool is_bg) {
   std::string exec_path = find_executable_path(parsed_command.command);
   if(exec_path.empty()) {
     std::cout << parsed_command.command << ": command not found" << std::endl;
     return;
   }
-
-  std::system(user_input.c_str());
+  if(!is_bg) {
+    std::system(user_input.c_str());
+  }else {
+    std::vector<char*> argv = create_argv_vector_for_fork(parsed_command);
+    pid_t ppid = fork();
+    if(ppid == 0) {
+      execv(exec_path.c_str(), argv.data());
+    }else {
+      std::cout << "[" << next_job_number << "] " << ppid;
+      next_job_number++;
+    }
+  }
 }
 
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
@@ -246,6 +270,13 @@ void adjust_out_stream(ParsedCommand& parsed_command) {
   }
 }
 
+bool is_bg_job(ParsedCommand& parsed_command) {
+  if(parsed_command.args.back() == "&") {
+    parsed_command.args.pop_back();
+    return true;
+  }
+  return false;
+}
 bool repl(const std::string& user_input) {
 
   ParsedCommand parsed_command = parse_command(user_input);
@@ -253,6 +284,8 @@ bool repl(const std::string& user_input) {
     return false;
   }
 
+  //strips & if present at the end.
+  bool treat_as_bg_job = is_bg_job(parsed_command);
   int saved_fd_1 = dup(1);
   int saved_fd_2 = dup(2);
   adjust_out_stream(parsed_command);
@@ -260,13 +293,12 @@ bool repl(const std::string& user_input) {
   if(handler_it != built_in_handlers.end()) {
     handler_it->second(parsed_command);
   }else {
-    handle_external(parsed_command, user_input);
+    handle_external(parsed_command, user_input, treat_as_bg_job);
   }
   dup2(saved_fd_1, 1);
   dup2(saved_fd_2, 2);
   return true;
 }
-
 
 std::set<std::string> matched_commands_set;
 std::string longest_common_prefix_string(const std::set<std::string>& set) {
