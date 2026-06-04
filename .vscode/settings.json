@@ -1,0 +1,15 @@
+{
+  "cmake.configureArgs": [
+    "-DCMAKE_TOOLCHAIN_FILE=${env:HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+  ],
+  "cmake.configureEnvironment": {
+    "VCPKG_ROOT": "${env:HOME}/vcpkg"
+  },
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "C_Cpp.default.cppStandard": "c++23",
+  "C_Cpp.default.cStandard": "c17",
+  "C_Cpp.intelliSenseEngine": "default",
+  "[cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+  }
+}

@@ -21,7 +21,6 @@ constexpr char PATH_LIST_SEPARATOR = ';';
 constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
 const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs"};
-
 struct ParsedCommand {
   std::string command;
   std::vector<std::string> args;
@@ -291,7 +290,7 @@ std::vector<char*> create_argv_vector_for_fork(ParsedCommand& parsed_command) {
   argv.push_back(nullptr);
   return argv;
 }
-void handle_external(ParsedCommand& parsed_command, const std::string& user_input, bool is_bg) {
+void handle_external(ParsedCommand& parsed_command, bool is_bg) {
   std::string exec_path = find_executable_path(parsed_command.command);
   if(exec_path.empty()) {
     std::cout << parsed_command.command << ": command not found" << std::endl;
@@ -305,10 +304,9 @@ void handle_external(ParsedCommand& parsed_command, const std::string& user_inpu
       execv(exec_path.c_str(), argv.data());
       perror("execv");
       exit(1);
-    }else {
-      int status;
-      waitpid(ppid, &status, 0);
     }
+    int status;
+    waitpid(ppid, &status, 0);
   }else {
     std::vector<char*> argv = create_argv_vector_for_fork(parsed_command);
     pid_t ppid = fork();
@@ -355,9 +353,9 @@ void adjust_out_stream(ParsedCommand& parsed_command) {
       parsed_command.args.pop_back();
       parsed_command.args.pop_back();
       if(second_last_args == "2>" || second_last_args == "2>>") {
-        dup2(new_fd, 2);
+        dup2(new_fd, 2); //change the std error stream to point to new fd (file descriptor)
       }else {
-        dup2(new_fd, 1); //change output stream to point to new file descriptor
+        dup2(new_fd, 1); //change output stream to point to new fg (file descriptor)
       }
     }
   }
@@ -374,14 +372,11 @@ bool is_bg_job(ParsedCommand& parsed_command) {
   }
   return false;
 }
-bool repl(const std::string& user_input) {
 
-  ParsedCommand parsed_command = parse_command(user_input);
+bool handle_command(ParsedCommand& parsed_command) {
   if(parsed_command.command == "exit") {
     return false;
   }
-
-  //strips & if present at the end.
   bool treat_as_bg_job = is_bg_job(parsed_command);
   int saved_fd_1 = dup(1);
   int saved_fd_2 = dup(2);
@@ -390,10 +385,73 @@ bool repl(const std::string& user_input) {
   if(handler_it != built_in_handlers.end()) {
     handler_it->second(parsed_command);
   }else {
-    handle_external(parsed_command, user_input, treat_as_bg_job);
+    handle_external(parsed_command, treat_as_bg_job);
   }
   dup2(saved_fd_1, 1);
   dup2(saved_fd_2, 2);
+  return true;
+}
+
+// a vector is important if there are multiple commands chained together with pipes |
+using ParsedCommandList = std::vector<ParsedCommand>;
+ParsedCommandList parse_user_input(const std::string& user_input) {
+
+  ParsedCommandList commandList;
+  std::stringstream input_ss(user_input);
+  std::string cmd;
+  while(std::getline(input_ss, cmd, '|')) {
+    ParsedCommand parsed_cmd = parse_command(cmd);
+    commandList.push_back(parsed_cmd);
+  }
+  return commandList;
+}
+
+bool repl(const std::string& user_input) {
+
+  ParsedCommandList parsed_command_list = parse_user_input(user_input);
+
+  //regular case...only one command to run...lets not complicate
+  if(parsed_command_list.size() == 1) {
+    bool retVal = handle_command(parsed_command_list[0]);
+    return retVal;
+  }
+
+  //multiple smaller command chunks seperated by | pipes
+  //considering 2 or more commands, run loop from beg to second last
+  for(int i = 0; i < parsed_command_list.size() - 1; i++) {
+    ParsedCommand left_parsed_cmd = parsed_command_list[i];
+    ParsedCommand right_parsed_cmd = parsed_command_list[i + 1];
+    int pipe_arr[2];
+    pipe(pipe_arr);
+
+    pid_t left_pid = fork();
+    if(left_pid == 0) {
+      //left child process
+      dup2(pipe_arr[1], STDOUT_FILENO); // now 1(STDOUT_FILENO) and pipe_arr[1] both reference the pipe write end
+      close(pipe_arr[0]); //dont need fd of pipe read end since this is leftcmd
+      close(pipe_arr[1]); //dont need fd for pipe out since STDOUT_FILENO(1) already references it
+      handle_command(left_parsed_cmd);
+      _exit(0);
+      //I need to add exit because handle_command does its own fork later
+    }
+
+    pid_t right_pid = fork();
+    if(right_pid == 0) {
+      //right child process
+      dup2(pipe_arr[0], STDIN_FILENO);//now 0(STDIN_FILENO and pipe_arr[0] both reference read end of pipe)
+      close(pipe_arr[1]); //dont need fd for write side of pipe
+      close(pipe_arr[0]); //read side of pipe is now pointed to by the STDIN_FILENO(0)...no need for duplicate
+      handle_command(right_parsed_cmd);
+      _exit(0);
+
+    }
+
+    //close the pipe handed to parent
+    close(pipe_arr[0]);
+    close(pipe_arr[1]);
+    waitpid(left_pid, nullptr, 0);
+    waitpid(right_pid, nullptr, 0);
+  }  
   return true;
 }
 

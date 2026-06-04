@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Shell (lldb)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/shell",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": false,
+      "console": "externalTerminal",
+      "sourceLanguages": ["cpp"],
+      "preLaunchTask": "cmake-configure",
+      "sourceMap": {}
+    }
+  ]
+
