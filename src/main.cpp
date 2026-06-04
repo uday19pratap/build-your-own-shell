@@ -131,10 +131,16 @@ std::string find_executable_path(const std::string& command) {
 }
 
 void handle_echo(const ParsedCommand& parsed_command) {
+  std::string echo_text = "";
   for(const std::string& arg : parsed_command.args) {
-    std::cout << arg << " ";
+    //last argument should not be followed by a space
+    //deal in the if case afterwards
+    echo_text += arg + " ";
   }
-  std::cout << std::endl;
+  if(echo_text.size() > 0) {
+    echo_text.pop_back();
+  }
+  std::cout << echo_text << std::endl;
 }
 
 void handle_type(const ParsedCommand& parsed_command) {
