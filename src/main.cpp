@@ -412,9 +412,10 @@ ParsedCommandList parse_user_input(const std::string& user_input) {
   return commandList;
 }
 
+/*
 void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
-  
-  for(int i = 0; i < parsed_command_list.size() - 1; i++) {
+
+  for(int i = 0; i < parsed_command_list.size(); i++) {
   ParsedCommand left_parsed_cmd = parsed_command_list[i];
   ParsedCommand right_parsed_cmd = parsed_command_list[i + 1];
   int pipe_arr[2];
@@ -449,6 +450,57 @@ void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
   waitpid(left_pid, nullptr, 0);
   waitpid(right_pid, nullptr, 0);
   } 
+}
+*/
+
+struct Pipe {
+  int fd[2];
+};
+  
+void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
+  //we need n - 1 pipes for n commands
+  std::vector<Pipe> pipes(parsed_command_list.size() - 1);
+
+  for(int i = 0; i < parsed_command_list.size(); i++ ) {
+    ParsedCommand cmd = parsed_command_list[i];
+    pid_t pid;
+    if(i == 0) {
+      Pipe& p = pipes[i];
+      pipe(p.fd);
+      pid = fork();
+      if(pid == 0) {
+        dup2(p.fd[1], STDOUT_FILENO);
+        close(p.fd[0]); close(p.fd[1]);
+        handle_command(cmd);
+        _exit(0);
+      }
+      close(p.fd[1]);
+    }else if(i == parsed_command_list.size() - 1) {
+      Pipe& pprev = pipes[i - 1];
+      pid = fork();
+      if(pid == 0) {
+        dup2(pprev.fd[0], STDIN_FILENO);
+        close(pprev.fd[0]);
+        handle_command(cmd);
+        _exit(0);
+      }
+      close(pprev.fd[0]);
+    }else {
+      Pipe& p = pipes[i];
+      pipe(p.fd);
+      Pipe& pprev = pipes[i - 1];
+      pid = fork();
+      if(pid == 0) {
+        dup2(p.fd[1], STDOUT_FILENO);
+        dup2(pprev.fd[0], STDIN_FILENO);
+        close(p.fd[0]); close(p.fd[1]); close(pprev.fd[0]);
+        handle_command(cmd);
+        _exit(0);
+      }
+      close(pprev.fd[0]); close(p.fd[1]);
+    }
+    waitpid(pid, nullptr, 0);
+  }
 }
 
 bool repl(const std::string& user_input) {
