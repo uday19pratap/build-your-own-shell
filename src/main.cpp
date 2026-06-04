@@ -461,6 +461,7 @@ void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
   //we need n - 1 pipes for n commands
   std::vector<Pipe> pipes(parsed_command_list.size() - 1);
 
+  std::vector<pid_t> child_pids;
   for(int i = 0; i < parsed_command_list.size(); i++ ) {
     ParsedCommand cmd = parsed_command_list[i];
     pid_t pid;
@@ -499,6 +500,11 @@ void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
       }
       close(pprev.fd[0]); close(p.fd[1]);
     }
+    child_pids.push_back(pid);
+    //waitpid(pid, nullptr, 0);
+  }
+  //reap all pids before prompt $ appears
+  for(pid_t pid : child_pids) {
     waitpid(pid, nullptr, 0);
   }
 }
