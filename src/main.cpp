@@ -464,8 +464,8 @@ void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
   }
 
   std::vector<Pipe> pipes(n - 1);
-  for (auto& pipe : pipes) {
-    pipe(pipe.fd);
+  for (auto& p : pipes) {
+    pipe(p.fd);
   }
 
   std::vector<pid_t> child_pids;
