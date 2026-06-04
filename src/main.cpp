@@ -458,52 +458,53 @@ struct Pipe {
 };
   
 void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
-  //we need n - 1 pipes for n commands
-  std::vector<Pipe> pipes(parsed_command_list.size() - 1);
+  size_t n = parsed_command_list.size();
+  if (n < 2) {
+    return;
+  }
+
+  std::vector<Pipe> pipes(n - 1);
+  for (auto& pipe : pipes) {
+    pipe(pipe.fd);
+  }
 
   std::vector<pid_t> child_pids;
-  for(int i = 0; i < parsed_command_list.size(); i++ ) {
+  child_pids.reserve(n);
+
+  for (size_t i = 0; i < n; ++i) {
     ParsedCommand cmd = parsed_command_list[i];
-    pid_t pid;
-    if(i == 0) {
-      Pipe& p = pipes[i];
-      pipe(p.fd);
-      pid = fork();
-      if(pid == 0) {
-        dup2(p.fd[1], STDOUT_FILENO);
-        close(p.fd[0]); close(p.fd[1]);
-        handle_command(cmd);
-        _exit(0);
+    int in_fd = (i == 0 ? STDIN_FILENO : pipes[i - 1].fd[0]);
+    int out_fd = (i == n - 1 ? STDOUT_FILENO : pipes[i].fd[1]);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+      if (in_fd != STDIN_FILENO) {
+        dup2(in_fd, STDIN_FILENO);
       }
-      close(p.fd[1]);
-    }else if(i == parsed_command_list.size() - 1) {
-      Pipe& pprev = pipes[i - 1];
-      pid = fork();
-      if(pid == 0) {
-        dup2(pprev.fd[0], STDIN_FILENO);
-        close(pprev.fd[0]);
-        handle_command(cmd);
-        _exit(0);
+      if (out_fd != STDOUT_FILENO) {
+        dup2(out_fd, STDOUT_FILENO);
       }
-      close(pprev.fd[0]);
-    }else {
-      Pipe& p = pipes[i];
-      pipe(p.fd);
-      Pipe& pprev = pipes[i - 1];
-      pid = fork();
-      if(pid == 0) {
-        dup2(p.fd[1], STDOUT_FILENO);
-        dup2(pprev.fd[0], STDIN_FILENO);
-        close(p.fd[0]); close(p.fd[1]); close(pprev.fd[0]);
-        handle_command(cmd);
-        _exit(0);
+
+      for (auto& pipe : pipes) {
+        close(pipe.fd[0]);
+        close(pipe.fd[1]);
       }
-      close(pprev.fd[0]); close(p.fd[1]);
+
+      handle_command(cmd);
+      _exit(0);
     }
+
+    if (in_fd != STDIN_FILENO) {
+      close(in_fd);
+    }
+    if (out_fd != STDOUT_FILENO) {
+      close(out_fd);
+    }
+
     child_pids.push_back(pid);
   }
-  //reap all pids before prompt $ appears
-  for(pid_t pid : child_pids) {
+
+  for (pid_t pid : child_pids) {
     waitpid(pid, nullptr, 0);
   }
 }
