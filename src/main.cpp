@@ -501,7 +501,6 @@ void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
       close(pprev.fd[0]); close(p.fd[1]);
     }
     child_pids.push_back(pid);
-    //waitpid(pid, nullptr, 0);
   }
   //reap all pids before prompt $ appears
   for(pid_t pid : child_pids) {
