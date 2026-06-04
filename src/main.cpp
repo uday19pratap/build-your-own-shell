@@ -433,6 +433,8 @@ bool repl(const std::string& user_input) {
       handle_command(left_parsed_cmd);
       _exit(0);
       //I need to add exit because handle_command does its own fork later
+      //handle_command is part of left child process. But it forks later to exec the left cmd
+      // then wait for the fork to merge back to l child process which returns back here.
     }
 
     pid_t right_pid = fork();
@@ -443,7 +445,6 @@ bool repl(const std::string& user_input) {
       close(pipe_arr[0]); //read side of pipe is now pointed to by the STDIN_FILENO(0)...no need for duplicate
       handle_command(right_parsed_cmd);
       _exit(0);
-
     }
 
     //close the pipe handed to parent
