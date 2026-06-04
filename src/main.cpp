@@ -412,6 +412,45 @@ ParsedCommandList parse_user_input(const std::string& user_input) {
   return commandList;
 }
 
+void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
+  
+  for(int i = 0; i < parsed_command_list.size() - 1; i++) {
+  ParsedCommand left_parsed_cmd = parsed_command_list[i];
+  ParsedCommand right_parsed_cmd = parsed_command_list[i + 1];
+  int pipe_arr[2];
+  pipe(pipe_arr);
+
+  pid_t left_pid = fork();
+  if(left_pid == 0) {
+    //left child process
+    dup2(pipe_arr[1], STDOUT_FILENO); // now 1(STDOUT_FILENO) and pipe_arr[1] both reference the pipe write end
+    close(pipe_arr[0]); //dont need fd of pipe read end since this is leftcmd
+    close(pipe_arr[1]); //dont need fd for pipe out since STDOUT_FILENO(1) already references it
+    handle_command(left_parsed_cmd);
+    _exit(0);
+    //I need to add exit because handle_command does its own fork later
+    //handle_command is part of left child process. But it forks later to exec the left cmd
+    // then wait for the fork to merge back to l child process which returns back here.
+  }
+
+  pid_t right_pid = fork();
+  if(right_pid == 0) {
+    //right child process
+    dup2(pipe_arr[0], STDIN_FILENO);//now 0(STDIN_FILENO and pipe_arr[0] both reference read end of pipe)
+    close(pipe_arr[1]); //dont need fd for write side of pipe
+    close(pipe_arr[0]); //read side of pipe is now pointed to by the STDIN_FILENO(0)...no need for duplicate
+    handle_command(right_parsed_cmd);
+    _exit(0);
+  }
+
+  //close the pipe handed to parent
+  close(pipe_arr[0]);
+  close(pipe_arr[1]);
+  waitpid(left_pid, nullptr, 0);
+  waitpid(right_pid, nullptr, 0);
+  } 
+}
+
 bool repl(const std::string& user_input) {
 
   ParsedCommandList parsed_command_list = parse_user_input(user_input);
@@ -421,44 +460,9 @@ bool repl(const std::string& user_input) {
     bool retVal = handle_command(parsed_command_list[0]);
     return retVal;
   }
-
   //multiple smaller command chunks seperated by | pipes
   //considering 2 or more commands, run loop from beg to second last
-  for(int i = 0; i < parsed_command_list.size() - 1; i++) {
-    ParsedCommand left_parsed_cmd = parsed_command_list[i];
-    ParsedCommand right_parsed_cmd = parsed_command_list[i + 1];
-    int pipe_arr[2];
-    pipe(pipe_arr);
-
-    pid_t left_pid = fork();
-    if(left_pid == 0) {
-      //left child process
-      dup2(pipe_arr[1], STDOUT_FILENO); // now 1(STDOUT_FILENO) and pipe_arr[1] both reference the pipe write end
-      close(pipe_arr[0]); //dont need fd of pipe read end since this is leftcmd
-      close(pipe_arr[1]); //dont need fd for pipe out since STDOUT_FILENO(1) already references it
-      handle_command(left_parsed_cmd);
-      _exit(0);
-      //I need to add exit because handle_command does its own fork later
-      //handle_command is part of left child process. But it forks later to exec the left cmd
-      // then wait for the fork to merge back to l child process which returns back here.
-    }
-
-    pid_t right_pid = fork();
-    if(right_pid == 0) {
-      //right child process
-      dup2(pipe_arr[0], STDIN_FILENO);//now 0(STDIN_FILENO and pipe_arr[0] both reference read end of pipe)
-      close(pipe_arr[1]); //dont need fd for write side of pipe
-      close(pipe_arr[0]); //read side of pipe is now pointed to by the STDIN_FILENO(0)...no need for duplicate
-      handle_command(right_parsed_cmd);
-      _exit(0);
-    }
-
-    //close the pipe handed to parent
-    close(pipe_arr[0]);
-    close(pipe_arr[1]);
-    waitpid(left_pid, nullptr, 0);
-    waitpid(right_pid, nullptr, 0);
-  }  
+  execute_pipe_commands(parsed_command_list);
   return true;
 }
 
