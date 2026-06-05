@@ -20,6 +20,7 @@ constexpr char PATH_LIST_SEPARATOR = ';';
 #else
 constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
+std::vector<std::string> commands_history;
 const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs", 
 "history"};
 struct ParsedCommand {
@@ -286,7 +287,11 @@ void handle_jobs(const ParsedCommand& parsed_command) {
 }
 
 void handle_history(const ParsedCommand& parsed_command) {
-
+  for(int i = 0; i < commands_history.size(); i++) {
+    const std::string& command = commands_history[i];
+    int idx = i + 1;
+    std::cout << "    " << idx << " " << command << std::endl;
+  }
 }
 std::vector<char*> create_argv_vector_for_fork(ParsedCommand& parsed_command) {
   std::vector<char*> argv;
@@ -690,7 +695,6 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
   return;
 }
 
-
 std::string register_keystrokes_for_command() {
   std::string user_input;
   char ch;
@@ -741,6 +745,9 @@ void set_raw_terminal_mode_for_keystrokes() {
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
 
+void push_to_commands_history(const std::string& input) {
+  commands_history.push_back(input);
+}
 void reap_all_bg_jobs() {
 
   int total_bg_jobs = jobid_to_job_map.size();
@@ -781,13 +788,12 @@ int main() {
     if(user_input.empty()) {
       continue;
     }
-
     //repl stand for read, evaluate,process, loop
     // the standard design of any shell process
+    push_to_commands_history(user_input);
     if(!repl(user_input)) {
       break;
     }
   }
-
   return 0;
 }
