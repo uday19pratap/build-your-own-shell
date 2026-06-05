@@ -287,10 +287,23 @@ void handle_jobs(const ParsedCommand& parsed_command) {
 }
 
 void handle_history(const ParsedCommand& parsed_command) {
-  for(int i = 0; i < commands_history.size(); i++) {
+  //if no argument is given
+  //n is implicity commands_history.size()
+  int start_index = commands_history.size();
+  int count = start_index;
+  if(parsed_command.args.size() > 0) {
+    count = atoi(parsed_command.args[0].c_str());
+    if(count <= 0 || count > commands_history.size()) {
+      return;
+    }
+  }
+  start_index = start_index - count;
+
+  //history n
+  //n should range between 1 to commands_history.size()
+  for(int i = start_index; i < commands_history.size(); i++) {
     const std::string& command = commands_history[i];
-    int idx = i + 1;
-    std::cout << "    " << idx << " " << command << std::endl;
+    std::cout << "    " << (i + 1) << " " << command << std::endl;
   }
 }
 std::vector<char*> create_argv_vector_for_fork(ParsedCommand& parsed_command) {
