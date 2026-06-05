@@ -20,7 +20,8 @@ constexpr char PATH_LIST_SEPARATOR = ';';
 #else
 constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
-const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs"};
+const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs", 
+"history"};
 struct ParsedCommand {
   std::string command;
   std::vector<std::string> args;
@@ -284,6 +285,9 @@ void handle_jobs(const ParsedCommand& parsed_command) {
   }
 }
 
+void handle_history(const ParsedCommand& parsed_command) {
+
+}
 std::vector<char*> create_argv_vector_for_fork(ParsedCommand& parsed_command) {
   std::vector<char*> argv;
 
@@ -333,7 +337,8 @@ const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"echo", handle_echo},
   {"type", handle_type},
   {"complete", handle_complete},
-  {"jobs", handle_jobs}
+  {"jobs", handle_jobs},
+  {"history", handle_history}
 };
 
 void adjust_out_stream(ParsedCommand& parsed_command) {
@@ -412,51 +417,9 @@ ParsedCommandList parse_user_input(const std::string& user_input) {
   return commandList;
 }
 
-/*
-void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
-
-  for(int i = 0; i < parsed_command_list.size(); i++) {
-  ParsedCommand left_parsed_cmd = parsed_command_list[i];
-  ParsedCommand right_parsed_cmd = parsed_command_list[i + 1];
-  int pipe_arr[2];
-  pipe(pipe_arr);
-
-  pid_t left_pid = fork();
-  if(left_pid == 0) {
-    //left child process
-    dup2(pipe_arr[1], STDOUT_FILENO); // now 1(STDOUT_FILENO) and pipe_arr[1] both reference the pipe write end
-    close(pipe_arr[0]); //dont need fd of pipe read end since this is leftcmd
-    close(pipe_arr[1]); //dont need fd for pipe out since STDOUT_FILENO(1) already references it
-    handle_command(left_parsed_cmd);
-    _exit(0);
-    //I need to add exit because handle_command does its own fork later
-    //handle_command is part of left child process. But it forks later to exec the left cmd
-    // then wait for the fork to merge back to l child process which returns back here.
-  }
-
-  pid_t right_pid = fork();
-  if(right_pid == 0) {
-    //right child process
-    dup2(pipe_arr[0], STDIN_FILENO);//now 0(STDIN_FILENO and pipe_arr[0] both reference read end of pipe)
-    close(pipe_arr[1]); //dont need fd for write side of pipe
-    close(pipe_arr[0]); //read side of pipe is now pointed to by the STDIN_FILENO(0)...no need for duplicate
-    handle_command(right_parsed_cmd);
-    _exit(0);
-  }
-
-  //close the pipe handed to parent
-  close(pipe_arr[0]);
-  close(pipe_arr[1]);
-  waitpid(left_pid, nullptr, 0);
-  waitpid(right_pid, nullptr, 0);
-  } 
-}
-*/
-
 struct Pipe {
   int fd[2];
-};
-  
+};  
 void execute_pipe_commands(ParsedCommandList& parsed_command_list) {
   size_t n = parsed_command_list.size();
   if (n < 2) {
