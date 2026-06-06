@@ -314,10 +314,9 @@ void handle_history(const ParsedCommand& parsed_command) {
   }else if(parsed_command.args.size() == 2) {
     //support -r option of history
     std::vector<std::string> args = parsed_command.args;
-
     auto it = std::find(args.begin(), args.end(), "-r");
     int idx = it - args.begin();
-    bool is_r_present = it != commands_history.end() &&  idx != args.size() - 1;
+    bool is_r_present = it != args.end() &&  idx != args.size() - 1;
     if(is_r_present) {
       std::string file_name = args[idx + 1];
       std::ifstream file(file_name);
@@ -328,6 +327,19 @@ void handle_history(const ParsedCommand& parsed_command) {
       std::string line;
       while(std::getline(file, line)) {
         commands_history.push_back(line);
+      }
+    }
+    it = std::find(args.begin(), args.end(), "-w");
+    idx = it - args.begin();
+    bool is_w_present =  it != args.end() && idx != args.size() - 1;
+    if(is_w_present) {
+      std::string file_name = args[idx + 1];
+      std::ofstream file(file_name, std::ios::app);
+      if(!file) {
+        std::cerr << "Failed to open file" << std::endl;
+      }
+      for(std::string cmd : commands_history) {
+        file << cmd << std::endl;
       }
     }
   }
