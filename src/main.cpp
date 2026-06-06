@@ -731,12 +731,48 @@ void move_through_history(Direction dir, std::string& user_input) {
   std::cout << "\r\033[K"; //clear line
   std::cout << "\r$ " << cmd;
 }
+
+bool handle_arrow_key(char escape_char, std::string& user_input) {
+  if (escape_char != 27) {
+    return false;
+  }
+
+  char ch1;
+  if (read(STDIN_FILENO, &ch1, 1) != 1) {
+    return true;
+  }
+  if (ch1 != '[') {
+    std::cout << static_cast<char>(escape_char) << ch1;
+    user_input.push_back(static_cast<char>(escape_char));
+    user_input.push_back(ch1);
+    return true;
+  }
+
+  char ch2;
+  if (read(STDIN_FILENO, &ch2, 1) != 1) {
+    return true;
+  }
+
+  if (ch2 == 'B') {
+    //down key
+    move_through_history(Direction::Next, user_input);
+  } else if (ch2 == 'A') {
+    //up key
+    move_through_history(Direction::Previous, user_input);
+  } else {
+    std::cout << static_cast<char>(escape_char) << ch1 << ch2;
+    user_input.push_back(static_cast<char>(escape_char));
+    user_input.push_back(ch1);
+    user_input.push_back(ch2);
+  }
+  return true;
+}
+
 std::string register_keystrokes_for_command() {
   std::string user_input;
   char ch;
   bool second_consecutive_tab = false;
 
-  std::ofstream file("try");
   std::set<std::string> candidates;
   bool completer_consecutive_tab = false;
   while(true) {
@@ -766,28 +802,9 @@ std::string register_keystrokes_for_command() {
         std::cout << "\b \b" << std::flush; // hello^ -> hell^o -> hell ^ -> hell^
       }
     }else {
-      // esc char
       if(ch == 27) {
-        char ch1;
-        read(STDIN_FILENO, &ch1, 1);
-        if(ch1 == '[') {
-          char ch2;
-          read(STDIN_FILENO, &ch2, 1);
-          if(ch2 == 'B') {
-            //down key
-            move_through_history(Direction::Next, user_input);
-          } else if (ch2 == 'A') {
-            //up key
-            move_through_history(Direction::Previous, user_input);
-          } else {
-            std::cout << ch << ch1 << ch2;
-            user_input.push_back(ch); user_input.push_back(ch1); user_input.push_back(ch2);
-          }
-        }else {
-          std::cout << ch << ch1;
-          user_input.push_back(ch); user_input.push_back(ch1);
-        }
-      }else {
+        handle_arrow_key(ch, user_input);
+      } else {
         std::cout << ch;
         user_input.push_back(ch);
       }
