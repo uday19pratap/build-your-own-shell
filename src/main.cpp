@@ -931,6 +931,7 @@ void load_commands_history() {
     }
     push_to_commands_history(line);
   }
+  history_append_idx = commands_history.size();
   update_history_cursor();
 }
 void write_commands_history() {
@@ -942,7 +943,8 @@ void write_commands_history() {
   if(!file) {
     std::cout << "Error opening HIST_FILE: " << hist_file << std::endl;
   }
-  for(std::string& cmd : commands_history) {
+  for(int i = history_append_idx; i < commands_history.size(); i++) {
+    std::string cmd = commands_history[i];
     file << cmd << std::endl;
   }
 }
