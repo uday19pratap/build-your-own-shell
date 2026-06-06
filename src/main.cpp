@@ -933,7 +933,19 @@ void load_commands_history() {
   }
   update_history_cursor();
 }
-
+void write_commands_history() {
+  char* hist_file = std::getenv("HISTFILE");
+  if(hist_file == nullptr) {
+    return;
+  }
+  std::ofstream file(hist_file, std::ios::app);
+  if(!file) {
+    std::cout << "Error opening HIST_FILE: " << hist_file << std::endl;
+  }
+  for(std::string& cmd : commands_history) {
+    file << cmd << std::endl;
+  }
+}
 int main() {
   load_commands_history();
   // Flush after every std::cout / std:cerr
@@ -953,6 +965,7 @@ int main() {
     // the standard design of any shell process
     push_to_commands_history(user_input);
     if(!repl(user_input)) {
+      write_commands_history();
       break;
     }
     
