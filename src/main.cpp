@@ -295,21 +295,41 @@ void handle_jobs(const ParsedCommand& parsed_command) {
 void handle_history(const ParsedCommand& parsed_command) {
   //if no argument is given
   //n is implicity commands_history.size()
-  int start_index = commands_history.size();
-  int count = start_index;
-  if(parsed_command.args.size() > 0) {
-    count = atoi(parsed_command.args[0].c_str());
-    if(count <= 0 || count > commands_history.size()) {
-      return;
+  if(parsed_command.args.size() >=0 && parsed_command.args.size() <= 1) {
+    int start_index = commands_history.size();
+    int count = start_index;
+    if(parsed_command.args.size() > 0) {
+      count = atoi(parsed_command.args[0].c_str());
+      if(count <= 0 || count > commands_history.size()) {
+        return;
+      }
     }
-  }
-  start_index = start_index - count;
+    start_index = start_index - count;
+    //history n
+    //n should range between 1 to commands_history.size()
+    for(int i = start_index; i < commands_history.size(); i++) {
+      const std::string& command = commands_history[i];
+      std::cout << "    " << (i + 1) << " " << command << std::endl;
+    }
+  }else if(parsed_command.args.size() == 2) {
+    //support -r option of history
+    std::vector<std::string> args = parsed_command.args;
 
-  //history n
-  //n should range between 1 to commands_history.size()
-  for(int i = start_index; i < commands_history.size(); i++) {
-    const std::string& command = commands_history[i];
-    std::cout << "    " << (i + 1) << " " << command << std::endl;
+    auto it = std::find(args.begin(), args.end(), "-r");
+    int idx = it - args.begin();
+    bool is_r_present = it != commands_history.end() &&  idx != args.size() - 1;
+    if(is_r_present) {
+      std::string file_name = args[idx + 1];
+      std::ifstream file(file_name);
+      if(!file) {
+        std::cerr << "Failed to open file" << std::endl;
+        return;
+      }
+      std::string line;
+      while(std::getline(file, line)) {
+        commands_history.push_back(line);
+      }
+    }
   }
 }
 std::vector<char*> create_argv_vector_for_fork(ParsedCommand& parsed_command) {
@@ -875,6 +895,7 @@ int main() {
     if(!repl(user_input)) {
       break;
     }
+    
   }
   return 0;
 }
