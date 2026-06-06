@@ -14,6 +14,7 @@
 #include<fcntl.h>
 #include<termios.h>
 #include<filesystem>
+#include<fstream>
 
 #ifdef _WIN32
 constexpr char PATH_LIST_SEPARATOR = ';';
@@ -21,6 +22,8 @@ constexpr char PATH_LIST_SEPARATOR = ';';
 constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
 std::vector<std::string> commands_history;
+static auto history_iter = commands_history.end();
+
 const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs", 
 "history"};
 struct ParsedCommand {
@@ -28,7 +31,10 @@ struct ParsedCommand {
   std::vector<std::string> args;
   std::string user_input;
 };
-
+enum class Direction {
+  Previous, 
+  Next
+};
 std::unordered_set<char> special_characters_in_double_quotes_set = {'\\', '$', '`', '\n', '"'};
 
 std::vector<std::string> pre_process_input(const std::string& input) {
@@ -708,11 +714,29 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
   return;
 }
 
+void move_through_history(Direction dir, std::string& user_input) {
+  auto old_iter = history_iter;
+  if(dir == Direction::Previous) {
+    history_iter--;
+  }else if(dir == Direction::Next) {
+    history_iter++;
+  }
+  if(history_iter < commands_history.begin() || history_iter >= commands_history.end()) {
+    //out of bounds...no-op..restore history iterator
+    history_iter = old_iter;
+    return;
+  }
+  std::string cmd = *history_iter;
+  user_input = cmd;
+  std::cout << "\r\033[K"; //clear line
+  std::cout << "\r$ " << cmd;
+}
 std::string register_keystrokes_for_command() {
   std::string user_input;
   char ch;
   bool second_consecutive_tab = false;
 
+  std::ofstream file("try");
   std::set<std::string> candidates;
   bool completer_consecutive_tab = false;
   while(true) {
@@ -723,7 +747,6 @@ std::string register_keystrokes_for_command() {
       candidates.clear();
       completer_consecutive_tab = false;
     }
-
     if(ch == '\n') { //for newline
       std::cout << std::endl << std::flush;
       break;
@@ -743,8 +766,31 @@ std::string register_keystrokes_for_command() {
         std::cout << "\b \b" << std::flush; // hello^ -> hell^o -> hell ^ -> hell^
       }
     }else {
-      std::cout << ch;
-      user_input.push_back(ch);
+      // esc char
+      if(ch == 27) {
+        char ch1;
+        read(STDIN_FILENO, &ch1, 1);
+        if(ch1 == '[') {
+          char ch2;
+          read(STDIN_FILENO, &ch2, 1);
+          if(ch2 == 'B') {
+            //down key
+            move_through_history(Direction::Next, user_input);
+          } else if (ch2 == 'A') {
+            //up key
+            move_through_history(Direction::Previous, user_input);
+          } else {
+            std::cout << ch << ch1 << ch2;
+            user_input.push_back(ch); user_input.push_back(ch1); user_input.push_back(ch2);
+          }
+        }else {
+          std::cout << ch << ch1;
+          user_input.push_back(ch); user_input.push_back(ch1);
+        }
+      }else {
+        std::cout << ch;
+        user_input.push_back(ch);
+      }
     }
   }
   return user_input;
@@ -758,9 +804,14 @@ void set_raw_terminal_mode_for_keystrokes() {
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
 
+void update_history_cursor() {
+  history_iter = commands_history.end();
+}
 void push_to_commands_history(const std::string& input) {
   commands_history.push_back(input);
+  update_history_cursor();
 }
+
 void reap_all_bg_jobs() {
 
   int total_bg_jobs = jobid_to_job_map.size();
