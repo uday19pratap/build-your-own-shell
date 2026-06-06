@@ -22,7 +22,7 @@ constexpr char PATH_LIST_SEPARATOR = ';';
 constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
 std::vector<std::string> commands_history;
-static auto history_iter = commands_history.end();
+static size_t history_index = 0;
 size_t history_append_idx = 0;
 
 const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs", 
@@ -353,7 +353,8 @@ void handle_history(const ParsedCommand& parsed_command) {
       if(!file) {
         std::cerr << "Failed to open file" << std::endl;
       }
-      //file << std::endl;
+      //only append history that was previously not present
+      //keep tracking it with history_append_index
       for(int i = history_append_idx; i < commands_history.size(); i++) {
         std::string cmd = commands_history[i];
         file << cmd << std::endl;
@@ -765,18 +766,25 @@ void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& p
 }
 
 void move_through_history(Direction dir, std::string& user_input) {
-  auto old_iter = history_iter;
+  size_t old_index = history_index;
   if(dir == Direction::Previous) {
-    history_iter--;
-  }else if(dir == Direction::Next) {
-    history_iter++;
+    if(history_index == 0) {
+      return;
+    }
+    history_index--;
+  } else if(dir == Direction::Next) {
+    if(history_index >= commands_history.size()) {
+      return;
+    }
+    history_index++;
   }
-  if(history_iter < commands_history.begin() || history_iter >= commands_history.end()) {
-    //out of bounds...no-op..restore history iterator
-    history_iter = old_iter;
+
+  if(history_index >= commands_history.size()) {
+    history_index = old_index;
     return;
   }
-  std::string cmd = *history_iter;
+
+  std::string cmd = commands_history[history_index];
   user_input = cmd;
   std::cout << "\r\033[K"; //clear line
   std::cout << "\r$ " << cmd;
@@ -872,7 +880,7 @@ void set_raw_terminal_mode_for_keystrokes() {
 }
 
 void update_history_cursor() {
-  history_iter = commands_history.end();
+  history_index = commands_history.size();
 }
 void push_to_commands_history(const std::string& input) {
   commands_history.push_back(input);
@@ -905,7 +913,29 @@ void reap_all_bg_jobs() {
     idx++;
   }
 }
+
+void load_commands_history() {
+  char* hist_file = std::getenv("HISTFILE");
+  if(hist_file == nullptr) {
+    return;
+  }
+  std::ifstream file(hist_file);
+  if(!file) {
+    std::cout << "Error opening file: " << hist_file << std::endl;
+    return;
+  }
+  std::string line;
+  while(std::getline(file, line)) {
+    if(line.empty()) {
+      continue;
+    }
+    push_to_commands_history(line);
+  }
+  update_history_cursor();
+}
+
 int main() {
+  load_commands_history();
   // Flush after every std::cout / std:cerr
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
