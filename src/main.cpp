@@ -26,7 +26,7 @@ static size_t history_index = 0;
 size_t history_append_idx = 0;
 
 const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs", 
-"history"};
+"history", "declare"};
 struct ParsedCommand {
   std::string command;
   std::vector<std::string> args;
@@ -407,13 +407,16 @@ void handle_external(ParsedCommand& parsed_command, bool is_bg) {
     }
   }
 }
+void handle_declare(ParsedCommand* parsed_command) {
 
+}
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"echo", handle_echo},
   {"type", handle_type},
   {"complete", handle_complete},
   {"jobs", handle_jobs},
-  {"history", handle_history}
+  {"history", handle_history},
+  {"declare", handle_declare}
 };
 
 void adjust_out_stream(ParsedCommand& parsed_command) {
