@@ -1,0 +1,11 @@
+echo mango pineapple
+echo banana pear
+echo grape mango
+echo raspberry grape strawberry
+echo pear banana 
+history -a try
+echo raspberry grape strawberry
+echo pear banana 
+history -a try
+echo grape
+history -a try

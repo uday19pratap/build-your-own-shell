@@ -23,6 +23,7 @@ constexpr char PATH_LIST_SEPARATOR = ':';
 #endif
 std::vector<std::string> commands_history;
 static auto history_iter = commands_history.end();
+size_t history_append_idx = 0;
 
 const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs", 
 "history"};
@@ -334,13 +335,30 @@ void handle_history(const ParsedCommand& parsed_command) {
     bool is_w_present =  it != args.end() && idx != args.size() - 1;
     if(is_w_present) {
       std::string file_name = args[idx + 1];
-      std::ofstream file(file_name, std::ios::app);
+      std::ofstream file(file_name, std::ios::trunc);
       if(!file) {
         std::cerr << "Failed to open file" << std::endl;
       }
       for(std::string cmd : commands_history) {
         file << cmd << std::endl;
       }
+    }
+    
+    it = std::find(args.begin(), args.end(), "-a");
+    idx = it - args.begin();
+    bool is_a_present =  it != args.end() && idx != args.size() - 1;
+    if(is_a_present) {
+      std::string file_name = args[idx + 1];
+      std::ofstream file(file_name, std::ios::app);
+      if(!file) {
+        std::cerr << "Failed to open file" << std::endl;
+      }
+      //file << std::endl;
+      for(int i = history_append_idx; i < commands_history.size(); i++) {
+        std::string cmd = commands_history[i];
+        file << cmd << std::endl;
+      }
+      history_append_idx = commands_history.size();
     }
   }
 }
