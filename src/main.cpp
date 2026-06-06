@@ -407,7 +407,7 @@ void handle_external(ParsedCommand& parsed_command, bool is_bg) {
     }
   }
 }
-void handle_declare(ParsedCommand* parsed_command) {
+void handle_declare(const ParsedCommand& parsed_command) {
 
 }
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
