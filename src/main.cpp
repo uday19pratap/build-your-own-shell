@@ -408,6 +408,24 @@ void handle_external(ParsedCommand& parsed_command, bool is_bg) {
   }
 }
 
+
+bool is_key_valid(std::string& key) {
+  for(int i = 0; i < key.length(); i++) {
+    char ch = key[i];
+    if(i == 0) {
+      if(std::isalpha(ch) || ch == '_') {
+        continue;
+      }
+      return false;
+    }else {
+      if(std::isalnum(ch) || ch == '_') {
+        continue;
+      }
+      return false;
+    }
+  }
+  return true;
+}
 std::unordered_map<std::string, std::string> declare_map;
 void handle_declare(const ParsedCommand& parsed_command) {
   const std::vector<std::string>& args = parsed_command.args;
@@ -418,8 +436,14 @@ void handle_declare(const ParsedCommand& parsed_command) {
     if(idx != std::string::npos) {
       std::string key = key_value.substr(0, idx);
       std::string value = key_value.substr(idx + 1);
-      if(!key.empty()) {
+      if(key.empty()) {
+        return;
+      }
+      //key has to start with wither _ or be an english letter
+      if(is_key_valid(key)) {
         declare_map[key] = value;
+      }else {
+        std::cout << "declare: " << "`" << key_value << "': not a valid identifier" << std::endl; 
       }
     }
 
