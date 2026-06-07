@@ -25,6 +25,9 @@ std::vector<std::string> commands_history;
 static size_t history_index = 0;
 size_t history_append_idx = 0;
 
+std::unordered_map<std::string, std::string> declare_map;
+
+
 const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs", 
 "history", "declare"};
 struct ParsedCommand {
@@ -104,11 +107,39 @@ std::vector<std::string> pre_process_input(const std::string& input) {
   return processed_args;
 }
 
+
+
+void expand_shell_variables(std::vector<std::string>& tokens) {
+  for(int i = 0; i < tokens.size(); i++) {
+    std::string& token = tokens[i];
+    std::string token_updated;
+    int idx = 0; 
+    while(idx < token.length()) {
+      char ch = token[idx];
+      if(ch != '$') {
+        token_updated += ch;
+        idx++;
+      }else {
+        std::string ros = token.substr(idx + 1);
+        for(const auto& [key, value] : declare_map) {
+          if(ros.starts_with(key) == false) {
+            continue;
+          }
+          token_updated += value;
+          idx = idx + key.size() + 1;
+          break;
+        }
+      }
+    }
+    token = token_updated;
+  }
+}
 ParsedCommand parse_command(const std::string& user_input) {
 
   ParsedCommand parsed;
 
   std::vector<std::string> tokens = pre_process_input(user_input);
+  expand_shell_variables(tokens);
   if(tokens.size() > 0) {
    parsed.command = tokens[0];
   }
@@ -426,7 +457,6 @@ bool is_key_valid(std::string& key) {
   }
   return true;
 }
-std::unordered_map<std::string, std::string> declare_map;
 void handle_declare(const ParsedCommand& parsed_command) {
   const std::vector<std::string>& args = parsed_command.args;
   // handle declare key=value
