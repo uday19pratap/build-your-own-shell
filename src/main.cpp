@@ -121,13 +121,39 @@ void expand_shell_variables(std::vector<std::string>& tokens) {
         idx++;
       }else {
         std::string ros = token.substr(idx + 1);
+        bool is_braces = ros.size() > 0 && ros[0] == '{';
+        bool match = false;
+        std::string matched_key;
+        size_t pos = ros.find('}');
+        if(pos != std::string::npos) {
+          matched_key = ros.substr(0, pos + 1);
+        }
         for(const auto& [key, value] : declare_map) {
-          if(ros.starts_with(key) == false) {
+          std::string modified_key = std::string("{") + key + std::string("}");
+          if(ros == key) {
+            token_updated += value;
+            idx = idx + key.size() + 1;
+            match = true;
+            matched_key = key;
+            break;
+          }else if(is_braces && ros.starts_with(modified_key)) {
+            token_updated += value;
+            idx = idx + modified_key.size() + 1;
+            match = true;
+            matched_key = modified_key;
+            break;
+          }else {
             continue;
           }
-          token_updated += value;
-          idx = idx + key.size() + 1;
-          break;
+        }
+
+        if(match == false) {
+          if(is_braces) {
+            idx = idx + matched_key.size() + 1;
+          }else {
+
+            idx++;
+          }
         }
       }
     }
