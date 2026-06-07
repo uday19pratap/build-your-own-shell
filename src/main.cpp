@@ -407,15 +407,34 @@ void handle_external(ParsedCommand& parsed_command, bool is_bg) {
     }
   }
 }
+
+std::unordered_map<std::string, std::string> declare_map;
 void handle_declare(const ParsedCommand& parsed_command) {
   const std::vector<std::string>& args = parsed_command.args;
-  {
-    auto it = std::find(args.begin(), args.end(), "-p");
-    if(it != args.end() && (it + 1) != args.end()) {
-      std::string var = *(it + 1);
+  // handle declare key=value
+  if(args.size() == 1) {
+    std::string key_value = args[0];
+    size_t idx = key_value.find('=');
+    if(idx != std::string::npos) {
+      std::string key = key_value.substr(0, idx);
+      std::string value = key_value.substr(idx + 1);
+      if(!key.empty()) {
+        declare_map[key] = value;
+      }
+    }
+
+  }
+  //handle declare -p
+  auto it = std::find(args.begin(), args.end(), "-p");
+  if(it != args.end() && (it + 1) != args.end()) {
+    std::string var = *(it + 1);
+    if(!var.empty() && declare_map.contains(var)) {
+      std::cout << "declare -- " << var << "=\"" << declare_map[var] << "\"" << std::endl; 
+    }else {
       std::cout << "declare: " << var << ": not found" << std::endl;
     }
   }
+
 }
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"echo", handle_echo},
