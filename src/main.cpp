@@ -408,7 +408,14 @@ void handle_external(ParsedCommand& parsed_command, bool is_bg) {
   }
 }
 void handle_declare(const ParsedCommand& parsed_command) {
-
+  const std::vector<std::string>& args = parsed_command.args;
+  {
+    auto it = std::find(args.begin(), args.end(), "-p");
+    if(it != args.end() && (it + 1) != args.end()) {
+      std::string var = *(it + 1);
+      std::cout << "declare: " << var << ": not found" << std::endl;
+    }
+  }
 }
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"echo", handle_echo},
@@ -725,7 +732,6 @@ std::set<std::string> run_completer_script(const ParsedCommand& parsed_command, 
   unsetenv("COMP_POINT");
   return completer_script_results;
 }
-
 
 void completer_auto_complete(std::set<std::string>& candidates, ParsedCommand& parsed_command, std::string& user_input, bool& consecutive_completer_tab) {
 
