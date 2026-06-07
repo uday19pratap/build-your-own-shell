@@ -109,7 +109,8 @@ std::vector<std::string> pre_process_input(const std::string& input) {
 
 
 
-void expand_shell_variables(std::vector<std::string>& tokens) {
+std::vector<std::string> expand_shell_variables(std::vector<std::string>& tokens) {
+  std::vector<std::string> tokens_updated;
   for(int i = 0; i < tokens.size(); i++) {
     std::string& token = tokens[i];
     std::string token_updated;
@@ -151,21 +152,23 @@ void expand_shell_variables(std::vector<std::string>& tokens) {
           if(is_braces) {
             idx = idx + matched_key.size() + 1;
           }else {
-
-            idx++;
+            break;
           }
         }
       }
     }
-    token = token_updated;
+    if(!token_updated.empty()) {
+      tokens_updated.push_back(token_updated);
+    }
   }
+  return tokens_updated;
 }
 ParsedCommand parse_command(const std::string& user_input) {
 
   ParsedCommand parsed;
 
   std::vector<std::string> tokens = pre_process_input(user_input);
-  expand_shell_variables(tokens);
+  tokens = expand_shell_variables(tokens);
   if(tokens.size() > 0) {
    parsed.command = tokens[0];
   }
