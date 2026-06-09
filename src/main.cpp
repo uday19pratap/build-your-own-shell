@@ -15,6 +15,8 @@
 #include<termios.h>
 #include<filesystem>
 #include<fstream>
+#include <algorithm>
+#include <cctype>
 
 #ifdef _WIN32
 constexpr char PATH_LIST_SEPARATOR = ';';
@@ -697,6 +699,99 @@ std::string longest_common_prefix_string(const std::set<std::string>& set) {
   std::string lcp = first.substr(0, i);
   return lcp;
 }
+std::string replace_last_token(const std::string& input, const std::string& replacement) {
+  size_t start = input.size();
+  while(start > 0 && input[start - 1] != ' ') {
+    --start;
+  }
+  return input.substr(0, start) + replacement;
+}
+
+void redraw_current_line(const std::string& user_input) {
+  std::cout << "\r\033[K";
+  std::cout << "\r$ " << user_input << std::flush;
+}
+
+bool filename_or_directory_completion(std::string& user_input, bool second_consecutive_tab, const ParsedCommand& parsed_command) {
+  if(parsed_command.args.empty()) {
+    return false;
+  }
+
+  const std::string current_token = parsed_command.args.back();
+  if(current_token.empty()) {
+    std::cout << "\a" << std::flush;
+    return false;
+  }
+
+  std::filesystem::path completion_path(current_token);
+  std::filesystem::path parent_dir = completion_path.parent_path().empty()
+      ? std::filesystem::path(".")
+      : completion_path.parent_path();
+  std::filesystem::path base_name = completion_path.filename();
+
+  std::error_code ec;
+  if(!std::filesystem::exists(parent_dir, ec) || ec) {
+    std::cout << "\a" << std::flush;
+    return false;
+  }
+
+  std::vector<std::string> matches;
+  for(const auto& entry : std::filesystem::directory_iterator(parent_dir, ec)) {
+    if(ec) {
+      break;
+    }
+    std::string entry_name = entry.path().filename().string();
+    if(entry_name.rfind(base_name.string(), 0) == 0) {
+      matches.push_back(entry_name);
+    }
+  }
+
+  if(matches.empty()) {
+    std::cout << "\a" << std::flush;
+    return false;
+  }
+
+  std::sort(matches.begin(), matches.end());
+  if(matches.size() == 1) {
+    std::string match = matches[0];
+    std::filesystem::path full_path = parent_dir / match;
+    bool is_dir = std::filesystem::is_directory(full_path, ec);
+    if(is_dir) {
+      match += "/ ";
+    } else {
+      match += " ";
+    }
+
+    user_input = replace_last_token(user_input, match);
+    redraw_current_line(user_input);
+    return false;
+  }
+
+  std::string lcp = longest_common_prefix_string(std::set<std::string>(matches.begin(), matches.end()));
+  if(!second_consecutive_tab && lcp.size() > base_name.string().size()) {
+    std::string completed_text = lcp;
+    if(!completion_path.parent_path().empty()) {
+      completed_text = completion_path.parent_path().string() + "/" + lcp;
+    }
+    user_input = replace_last_token(user_input, completed_text);
+    redraw_current_line(user_input);
+    return false;
+  }
+
+  if(!second_consecutive_tab) {
+    std::cout << "\a" << std::flush;
+    return true;
+  }
+
+  std::cout << std::endl;
+  for(const std::string& match : matches) {
+    std::cout << match << "  ";
+  }
+  std::cout << std::endl;
+  redraw_current_line(user_input);
+  return false;
+}
+
 bool auto_completion_handler(std::string& user_input, bool second_consecutive_tab) {
   
   if(user_input.empty() || user_input.back() == ' ') {
@@ -963,7 +1058,11 @@ std::string register_keystrokes_for_command() {
       }
       completer_auto_complete(candidates, parsed_command, user_input, completer_consecutive_tab);
       if(candidates.size() == 0) {
-        bool second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
+        if(parsed_command.args.empty()) {
+          second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
+        } else {
+          second_consecutive_tab = filename_or_directory_completion(user_input, second_consecutive_tab, parsed_command);
+        }
       }
     }else if(ch == 8 || ch == 127) { //for backspace/delete
       if(user_input.size() > 0) {
