@@ -521,7 +521,11 @@ void handle_declare(const ParsedCommand& parsed_command) {
 
 }
 void handle_pwd(const ParsedCommand& parsed_command) {
-  std::cout << current_working_directory.string() << std::endl;
+  std::string path_str = current_working_directory.string();
+  if(path_str.back() == '/') {
+    path_str.pop_back();
+  }
+  std::cout << path_str << std::endl;
 }
 
 void handle_cd(const ParsedCommand& parsed_command) {
@@ -530,10 +534,20 @@ void handle_cd(const ParsedCommand& parsed_command) {
   }
   const std::string& dir = parsed_command.args[0];
   std::filesystem::path path(dir);
-  if(std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
-    current_working_directory = path;
+  if(dir.starts_with("/")) {
+    if(std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+      current_working_directory = path;
+      chdir(current_working_directory.string().c_str());
+    }else {
+      std::cout << "cd: " << parsed_command.args[0] << ": No such file or directory" << std::endl;
+    }
   }else {
-    std::cout << "cd: " << parsed_command.args[0] << ": No such file or directory" << std::endl;
+    std::filesystem::path p_final = current_working_directory / dir;
+    p_final = std::filesystem::path(p_final.lexically_normal());
+    if(std::filesystem::exists(p_final) && std::filesystem::is_directory(p_final)) {
+      current_working_directory = p_final;
+      chdir(current_working_directory.string().c_str());
+    }
   }
 }
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
