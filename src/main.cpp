@@ -790,7 +790,12 @@ bool filename_or_directory_completion(std::string& user_input, bool second_conse
 
   std::cout << std::endl;
   for(const std::string& match : matches) {
-    std::cout << match << "  ";
+    std::filesystem::path candidate_path = parent_dir / match;
+    if(std::filesystem::is_directory(candidate_path, ec)) {
+      std::cout << match << "/  ";
+    } else {
+      std::cout << match << "  ";
+    }
   }
   std::cout << std::endl;
   redraw_current_line(user_input);
