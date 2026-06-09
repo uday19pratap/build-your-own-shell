@@ -723,16 +723,10 @@ void redraw_current_line(const std::string& user_input) {
 }
 
 bool filename_or_directory_completion(std::string& user_input, bool second_consecutive_tab, const ParsedCommand& parsed_command) {
-  if(parsed_command.args.empty()) {
-    return false;
+  std::string current_token;
+  if(!parsed_command.args.empty()) {
+    current_token = parsed_command.args.back();
   }
-
-  const std::string current_token = parsed_command.args.back();
-  if(current_token.empty()) {
-    std::cout << "\a" << std::flush;
-    return false;
-  }
-
   std::filesystem::path completion_path(current_token);
   std::filesystem::path parent_dir = completion_path.parent_path().empty()
       ? std::filesystem::path(".")
@@ -751,7 +745,7 @@ bool filename_or_directory_completion(std::string& user_input, bool second_conse
       break;
     }
     std::string entry_name = entry.path().filename().string();
-    if(entry_name.rfind(base_name.string(), 0) == 0) {
+    if(base_name.empty() || entry_name.rfind(base_name.string(), 0) == 0) {
       matches.push_back(entry_name);
     }
   }
@@ -767,7 +761,7 @@ bool filename_or_directory_completion(std::string& user_input, bool second_conse
     std::filesystem::path full_path = parent_dir / match;
     bool is_dir = std::filesystem::is_directory(full_path, ec);
     if(is_dir) {
-      match += "/ ";
+      match += "/";
     } else {
       match += " ";
     }
@@ -1070,7 +1064,11 @@ std::string register_keystrokes_for_command() {
       completer_auto_complete(candidates, parsed_command, user_input, completer_consecutive_tab);
       if(candidates.size() == 0) {
         if(parsed_command.args.empty()) {
-          second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
+          if(user_input.empty() || user_input.back() != ' ') {
+            second_consecutive_tab = auto_completion_handler(user_input, second_consecutive_tab);
+          } else {
+            second_consecutive_tab = filename_or_directory_completion(user_input, second_consecutive_tab, parsed_command);
+          }
         } else {
           second_consecutive_tab = filename_or_directory_completion(user_input, second_consecutive_tab, parsed_command);
         }
