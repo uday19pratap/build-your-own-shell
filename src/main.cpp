@@ -28,10 +28,9 @@ static size_t history_index = 0;
 size_t history_append_idx = 0;
 
 std::unordered_map<std::string, std::string> declare_map;
-
-
+std::filesystem::path current_working_directory;
 const std::unordered_set<std::string> built_in_commands = {"echo", "type", "exit", "complete", "jobs", 
-"history", "declare"};
+"history", "declare", "pwd", "cd"};
 struct ParsedCommand {
   std::string command;
   std::vector<std::string> args;
@@ -521,13 +520,22 @@ void handle_declare(const ParsedCommand& parsed_command) {
   }
 
 }
+void handle_pwd(const ParsedCommand& parsed_command) {
+  std::cout << current_working_directory.string() << std::endl;
+}
+
+void handle_cd(const ParsedCommand& parsed_command) {
+
+}
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"echo", handle_echo},
   {"type", handle_type},
   {"complete", handle_complete},
   {"jobs", handle_jobs},
   {"history", handle_history},
-  {"declare", handle_declare}
+  {"declare", handle_declare},
+  {"pwd", handle_pwd},
+  {"cd", handle_cd}
 };
 
 void adjust_out_stream(ParsedCommand& parsed_command) {
@@ -1172,7 +1180,16 @@ void write_commands_history() {
     file << cmd << std::endl;
   }
 }
+
+void load_current_working_directory() {
+  char buf[256];
+  if(getcwd(buf, sizeof(buf)) != nullptr) {
+    current_working_directory = std::filesystem::path(buf);
+  }
+}
+
 int main() {
+  load_current_working_directory();
   load_commands_history();
   // Flush after every std::cout / std:cerr
   std::cout << std::unitbuf;
