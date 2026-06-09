@@ -525,7 +525,15 @@ void handle_pwd(const ParsedCommand& parsed_command) {
 }
 
 void handle_cd(const ParsedCommand& parsed_command) {
-
+  if(parsed_command.command.empty() || parsed_command.args.size() != 1) {
+    return;
+  }
+  std::filesystem::path path(parsed_command.args[0]);
+  if(std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+    current_working_directory = path;
+  }else {
+    std::cout << "cd: " << parsed_command.args[0] << ": No such file or directory" << std::endl;
+  }
 }
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"echo", handle_echo},
