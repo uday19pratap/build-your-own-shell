@@ -528,7 +528,8 @@ void handle_cd(const ParsedCommand& parsed_command) {
   if(parsed_command.command.empty() || parsed_command.args.size() != 1) {
     return;
   }
-  std::filesystem::path path(parsed_command.args[0]);
+  const std::string& dir = parsed_command.args[0];
+  std::filesystem::path path(dir);
   if(std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
     current_working_directory = path;
   }else {
