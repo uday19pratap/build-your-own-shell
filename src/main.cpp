@@ -532,23 +532,36 @@ void handle_cd(const ParsedCommand& parsed_command) {
   if(parsed_command.command.empty() || parsed_command.args.size() != 1) {
     return;
   }
+
   const std::string& dir = parsed_command.args[0];
-  std::filesystem::path path(dir);
-  if(dir.starts_with("/")) {
-    if(std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
-      current_working_directory = path;
+  auto try_change_directory = [&](const std::filesystem::path& candidate_path) -> bool {
+    std::error_code ec;
+    if(std::filesystem::exists(candidate_path, ec) && !ec &&
+       std::filesystem::is_directory(candidate_path, ec) && !ec) {
+      current_working_directory = candidate_path.lexically_normal();
       chdir(current_working_directory.string().c_str());
-    }else {
-      std::cout << "cd: " << parsed_command.args[0] << ": No such file or directory" << std::endl;
+      return true;
     }
-  }else {
-    std::filesystem::path p_final = current_working_directory / dir;
-    p_final = std::filesystem::path(p_final.lexically_normal());
-    if(std::filesystem::exists(p_final) && std::filesystem::is_directory(p_final)) {
-      current_working_directory = p_final;
-      chdir(current_working_directory.string().c_str());
+    return false;
+  };
+
+  std::filesystem::path target_path;
+  if(dir == "~") {
+    const char* home_dir = std::getenv("HOME");
+    if(home_dir != nullptr && home_dir[0] != '\0') {
+      target_path = std::filesystem::path(home_dir);
     }
+  } else if(dir.starts_with("/")) {
+    target_path = std::filesystem::path(dir);
+  } else {
+    target_path = current_working_directory / dir;
   }
+
+  if(!target_path.empty() && try_change_directory(target_path)) {
+    return;
+  }
+
+  std::cout << "cd: " << dir << ": No such file or directory" << std::endl;
 }
 const std::unordered_map<std::string, CommandHandler> built_in_handlers = {
   {"echo", handle_echo},
