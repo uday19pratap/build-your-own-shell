@@ -707,6 +707,16 @@ std::string replace_last_token(const std::string& input, const std::string& repl
   return input.substr(0, start) + replacement;
 }
 
+std::string build_completed_path(const std::filesystem::path& parent_dir, const std::string& match, const std::filesystem::path& completion_path) {
+  std::filesystem::path result_path;
+  if(completion_path.parent_path().empty()) {
+    result_path = match;
+  } else {
+    result_path = completion_path.parent_path() / match;
+  }
+  return result_path.string();
+}
+
 void redraw_current_line(const std::string& user_input) {
   std::cout << "\r\033[K";
   std::cout << "\r$ " << user_input << std::flush;
@@ -762,7 +772,8 @@ bool filename_or_directory_completion(std::string& user_input, bool second_conse
       match += " ";
     }
 
-    user_input = replace_last_token(user_input, match);
+    std::string completed_text = build_completed_path(parent_dir, match, completion_path);
+    user_input = replace_last_token(user_input, completed_text);
     redraw_current_line(user_input);
     return false;
   }
@@ -771,7 +782,7 @@ bool filename_or_directory_completion(std::string& user_input, bool second_conse
   if(!second_consecutive_tab && lcp.size() > base_name.string().size()) {
     std::string completed_text = lcp;
     if(!completion_path.parent_path().empty()) {
-      completed_text = completion_path.parent_path().string() + "/" + lcp;
+      completed_text = build_completed_path(parent_dir, lcp, completion_path);
     }
     user_input = replace_last_token(user_input, completed_text);
     redraw_current_line(user_input);
